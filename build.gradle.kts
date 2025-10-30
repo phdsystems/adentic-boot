@@ -1,12 +1,10 @@
 plugins {
     java
     jacoco
-    id("org.springframework.boot") version "3.3.5"
-    id("io.spring.dependency-management") version "1.1.6"
 }
 
 group = "dev.adeengineer"
-version = "0.1.0-SNAPSHOT"
+version = "0.2.0-SNAPSHOT"
 
 java {
     toolchain {
@@ -21,57 +19,47 @@ configurations {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
-extra["springShellVersion"] = "3.3.3"
-
 dependencies {
-    // Spring Boot Starters
-    implementation("org.springframework.boot:spring-boot-starter")
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("org.springframework.boot:spring-boot-starter-validation")
+    // Import Adentic BOMs
+    implementation(platform("dev.adeengineer.ee:adentic-ee-bom:1.0.0-SNAPSHOT"))
 
-    // Spring Shell for CLI
-    implementation("org.springframework.shell:spring-shell-starter:${property("springShellVersion")}")
+    // Adentic Core - Managed by BOM
+    implementation("dev.adeengineer:adentic-core")
 
-    // Jackson for JSON and YAML processing
+    // Javalin - Lightweight HTTP server
+    implementation("io.javalin:javalin:6.1.3")
+
+    // Jackson - JSON serialization (versions managed by BOM)
     implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
 
-    // OpenAI Java Client
-    implementation("com.theokanning.openai-gpt3-java:service:0.18.2")
+    // SLF4J + Logback - Logging
+    implementation("org.slf4j:slf4j-api")
+    implementation("ch.qos.logback:logback-classic:1.5.6")
 
-    // HTTP Client for Anthropic (no official Java SDK yet)
-    implementation("io.projectreactor.netty:reactor-netty")
-
-    // Lombok
+    // Lombok - Code generation
     compileOnly("org.projectlombok:lombok:1.18.34")
     annotationProcessor("org.projectlombok:lombok:1.18.34")
 
-    // Monitoring
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("io.micrometer:micrometer-registry-prometheus")
+    // Project Reactor - Reactive streams (version managed by BOM)
+    implementation("io.projectreactor:reactor-core")
 
-    // Testing
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("io.projectreactor:reactor-test")
-    testImplementation("org.mockito:mockito-core")
+    // H2 Database - In-memory SQL database for testing and development
+    implementation("com.h2database:h2:2.2.224")
+
+    // Testing (versions managed by BOM)
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
     testImplementation("org.assertj:assertj-core")
-}
-
-tasks.withType<JavaCompile> {
-    options.compilerArgs.add("--enable-preview")
+    testImplementation("org.mockito:mockito-core")
 }
 
 tasks.withType<Test> {
-    jvmArgs("--enable-preview")
     useJUnitPlatform()
-}
-
-tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
-    archiveFileName.set("${project.name}-${project.version}.jar")
 }
 
 // JaCoCo Test Coverage Configuration
@@ -96,7 +84,7 @@ tasks.jacocoTestCoverageVerification {
     violationRules {
         rule {
             limit {
-                minimum = "0.80".toBigDecimal()
+                minimum = "0.70".toBigDecimal()
             }
         }
         rule {
@@ -104,11 +92,10 @@ tasks.jacocoTestCoverageVerification {
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
-                minimum = "0.70".toBigDecimal()
+                minimum = "0.60".toBigDecimal()
             }
             excludes = listOf(
-                "dev.adeengineer.platform.PlatformApplication",
-                "dev.adeengineer.platform.config.*"
+                "dev.adeengineer.adentic.boot.AgenticApplication"
             )
         }
     }

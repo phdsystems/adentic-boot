@@ -1,1 +1,1 @@
-rootProject.name = "role-manager-app"
+rootProject.name = "adentic-boot"
