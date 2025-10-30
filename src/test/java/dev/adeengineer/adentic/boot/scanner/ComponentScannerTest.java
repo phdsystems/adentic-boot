@@ -4,17 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.adeengineer.adentic.boot.annotations.Component;
 import dev.adeengineer.adentic.boot.annotations.Service;
-import dev.adeengineer.adentic.boot.annotations.provider.Evaluation;
-import dev.adeengineer.adentic.boot.annotations.provider.Infrastructure;
-import dev.adeengineer.adentic.boot.annotations.provider.LLM;
-import dev.adeengineer.adentic.boot.annotations.provider.Memory;
-import dev.adeengineer.adentic.boot.annotations.provider.Messaging;
-import dev.adeengineer.adentic.boot.annotations.provider.Orchestration;
-import dev.adeengineer.adentic.boot.annotations.provider.Queue;
-import dev.adeengineer.adentic.boot.annotations.provider.Storage;
-import dev.adeengineer.adentic.boot.annotations.provider.Tool;
-import dev.adeengineer.adentic.boot.annotations.service.AgentService;
-import dev.adeengineer.adentic.boot.annotations.service.DomainService;
+import dev.adeengineer.annotation.provider.EvaluationProvider;
+import dev.adeengineer.annotation.provider.InfrastructureProvider;
+import dev.adeengineer.annotation.provider.MemoryProvider;
+import dev.adeengineer.annotation.provider.MessageBrokerProvider;
+import dev.adeengineer.annotation.provider.OrchestrationProvider;
+import dev.adeengineer.annotation.provider.StorageProvider;
+import dev.adeengineer.annotation.provider.TaskQueueProvider;
+import dev.adeengineer.annotation.provider.TextGenerationProvider;
+import dev.adeengineer.annotation.provider.ToolProvider;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,8 +22,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Integration tests for ComponentScanner with all annotation types.
  *
- * <p>Tests component discovery for all 13 annotation types: core annotations (Component, Service),
- * provider annotations (9 types), and service annotations (DomainService, AgentService).
+ * <p>Tests component discovery for core annotations (Component, Service) and provider annotations
+ * from adentic-annotation module.
  */
 @DisplayName("ComponentScanner Integration Tests")
 class ComponentScannerTest {
@@ -49,91 +47,75 @@ class ComponentScannerTest {
   }
 
   @Test
-  @DisplayName("Should scan specific annotation type - @LLM")
-  void shouldScanLLMProviders() {
-    Set<Class<?>> llmProviders = scanner.scanForAnnotation(LLM.class);
+  @DisplayName("Should scan specific annotation type - @TextGenerationProvider")
+  void shouldScanTextGenerationProviders() {
+    Set<Class<?>> providers = scanner.scanForAnnotation(TextGenerationProvider.class);
 
-    assertThat(llmProviders).contains(TestOpenAIProvider.class);
+    assertThat(providers).contains(TestOpenAIProvider.class);
   }
 
   @Test
-  @DisplayName("Should scan specific annotation type - @Infrastructure")
+  @DisplayName("Should scan specific annotation type - @InfrastructureProvider")
   void shouldScanInfrastructureProviders() {
-    Set<Class<?>> infraProviders = scanner.scanForAnnotation(Infrastructure.class);
+    Set<Class<?>> infraProviders = scanner.scanForAnnotation(InfrastructureProvider.class);
 
     assertThat(infraProviders).contains(TestDockerProvider.class);
   }
 
   @Test
-  @DisplayName("Should scan specific annotation type - @Storage")
+  @DisplayName("Should scan specific annotation type - @StorageProvider")
   void shouldScanStorageProviders() {
-    Set<Class<?>> storageProviders = scanner.scanForAnnotation(Storage.class);
+    Set<Class<?>> storageProviders = scanner.scanForAnnotation(StorageProvider.class);
 
     assertThat(storageProviders).contains(TestLocalStorageProvider.class);
   }
 
   @Test
-  @DisplayName("Should scan specific annotation type - @Messaging")
+  @DisplayName("Should scan specific annotation type - @MessageBrokerProvider")
   void shouldScanMessagingProviders() {
-    Set<Class<?>> messagingProviders = scanner.scanForAnnotation(Messaging.class);
+    Set<Class<?>> messagingProviders = scanner.scanForAnnotation(MessageBrokerProvider.class);
 
     assertThat(messagingProviders).contains(TestKafkaProvider.class);
   }
 
   @Test
-  @DisplayName("Should scan specific annotation type - @Orchestration")
+  @DisplayName("Should scan specific annotation type - @OrchestrationProvider")
   void shouldScanOrchestrationProviders() {
-    Set<Class<?>> orchestrationProviders = scanner.scanForAnnotation(Orchestration.class);
+    Set<Class<?>> orchestrationProviders = scanner.scanForAnnotation(OrchestrationProvider.class);
 
     assertThat(orchestrationProviders).contains(TestSimpleOrchestrator.class);
   }
 
   @Test
-  @DisplayName("Should scan specific annotation type - @Memory")
+  @DisplayName("Should scan specific annotation type - @MemoryProvider")
   void shouldScanMemoryProviders() {
-    Set<Class<?>> memoryProviders = scanner.scanForAnnotation(Memory.class);
+    Set<Class<?>> memoryProviders = scanner.scanForAnnotation(MemoryProvider.class);
 
     assertThat(memoryProviders).contains(TestInMemoryProvider.class);
   }
 
   @Test
-  @DisplayName("Should scan specific annotation type - @Queue")
+  @DisplayName("Should scan specific annotation type - @TaskQueueProvider")
   void shouldScanQueueProviders() {
-    Set<Class<?>> queueProviders = scanner.scanForAnnotation(Queue.class);
+    Set<Class<?>> queueProviders = scanner.scanForAnnotation(TaskQueueProvider.class);
 
     assertThat(queueProviders).contains(TestRedisQueueProvider.class);
   }
 
   @Test
-  @DisplayName("Should scan specific annotation type - @Tool")
+  @DisplayName("Should scan specific annotation type - @ToolProvider")
   void shouldScanToolProviders() {
-    Set<Class<?>> toolProviders = scanner.scanForAnnotation(Tool.class);
+    Set<Class<?>> toolProviders = scanner.scanForAnnotation(ToolProvider.class);
 
     assertThat(toolProviders).contains(TestSimpleToolProvider.class);
   }
 
   @Test
-  @DisplayName("Should scan specific annotation type - @Evaluation")
+  @DisplayName("Should scan specific annotation type - @EvaluationProvider")
   void shouldScanEvaluationProviders() {
-    Set<Class<?>> evaluationProviders = scanner.scanForAnnotation(Evaluation.class);
+    Set<Class<?>> evaluationProviders = scanner.scanForAnnotation(EvaluationProvider.class);
 
     assertThat(evaluationProviders).contains(TestLLMEvaluator.class);
-  }
-
-  @Test
-  @DisplayName("Should scan specific annotation type - @DomainService")
-  void shouldScanDomainServices() {
-    Set<Class<?>> domainServices = scanner.scanForAnnotation(DomainService.class);
-
-    assertThat(domainServices).contains(TestFinanceDomainService.class);
-  }
-
-  @Test
-  @DisplayName("Should scan specific annotation type - @AgentService")
-  void shouldScanAgentServices() {
-    Set<Class<?>> agentServices = scanner.scanForAnnotation(AgentService.class);
-
-    assertThat(agentServices).contains(TestAgentRegistryService.class);
   }
 
   @Test
@@ -143,7 +125,7 @@ class ComponentScannerTest {
 
     assertThat(providers)
         .containsKeys(
-            "llm",
+            "text-generation",
             "infrastructure",
             "storage",
             "messaging",
@@ -151,9 +133,12 @@ class ComponentScannerTest {
             "memory",
             "queue",
             "tool",
-            "evaluation");
+            "evaluation",
+            "web-search",
+            "web-test",
+            "database");
 
-    assertThat(providers.get("llm")).contains(TestOpenAIProvider.class);
+    assertThat(providers.get("text-generation")).contains(TestOpenAIProvider.class);
     assertThat(providers.get("infrastructure")).contains(TestDockerProvider.class);
     assertThat(providers.get("storage")).contains(TestLocalStorageProvider.class);
     assertThat(providers.get("messaging")).contains(TestKafkaProvider.class);
@@ -171,36 +156,30 @@ class ComponentScannerTest {
   @Service
   static class TestService {}
 
-  @LLM(name = "openai", type = "text-generation")
+  @TextGenerationProvider(name = "openai", model = "gpt-4")
   static class TestOpenAIProvider {}
 
-  @Infrastructure(name = "docker", type = "container")
+  @InfrastructureProvider(name = "docker")
   static class TestDockerProvider {}
 
-  @Storage(name = "local", type = "file-system")
+  @StorageProvider(name = "local")
   static class TestLocalStorageProvider {}
 
-  @Messaging(name = "kafka", type = "distributed")
+  @MessageBrokerProvider(name = "kafka")
   static class TestKafkaProvider {}
 
-  @Orchestration(name = "simple")
+  @OrchestrationProvider(name = "simple")
   static class TestSimpleOrchestrator {}
 
-  @Memory(name = "in-memory", type = "short-term")
+  @MemoryProvider(name = "in-memory")
   static class TestInMemoryProvider {}
 
-  @Queue(name = "redis", type = "distributed")
+  @TaskQueueProvider(name = "redis")
   static class TestRedisQueueProvider {}
 
-  @Tool(name = "simple")
+  @ToolProvider(name = "simple")
   static class TestSimpleToolProvider {}
 
-  @Evaluation(name = "llm-evaluator")
+  @EvaluationProvider(name = "llm-evaluator")
   static class TestLLMEvaluator {}
-
-  @DomainService(name = "finance-manager", domain = "finance")
-  static class TestFinanceDomainService {}
-
-  @AgentService(name = "agent-registry")
-  static class TestAgentRegistryService {}
 }

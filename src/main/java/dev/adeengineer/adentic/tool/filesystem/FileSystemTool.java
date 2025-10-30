@@ -1,9 +1,9 @@
 package dev.adeengineer.adentic.tool.filesystem;
 
-import dev.adeengineer.adentic.boot.annotations.provider.Tool;
 import dev.adeengineer.adentic.tool.filesystem.config.FileSystemConfig;
 import dev.adeengineer.adentic.tool.filesystem.model.*;
 import dev.adeengineer.adentic.tool.filesystem.security.PathValidator;
+import dev.adeengineer.annotation.provider.ToolProvider;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.*;
@@ -51,7 +51,7 @@ import reactor.core.publisher.Mono;
  * @see FileSystemConfig
  * @see PathValidator
  */
-@Tool(name = "file-system")
+@ToolProvider(name = "file-system")
 @Slf4j
 public class FileSystemTool {
 

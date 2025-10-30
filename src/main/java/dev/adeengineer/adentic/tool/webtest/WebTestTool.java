@@ -1,9 +1,9 @@
 package dev.adeengineer.adentic.tool.webtest;
 
-import dev.adeengineer.adentic.boot.annotations.provider.Tool;
 import dev.adeengineer.adentic.tool.webtest.config.WebTestConfig;
 import dev.adeengineer.adentic.tool.webtest.model.*;
 import dev.adeengineer.adentic.tool.webtest.provider.*;
+import dev.adeengineer.annotation.provider.ToolProvider;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -64,7 +64,7 @@ import reactor.core.publisher.Mono;
  * @see WebTestProvider
  * @see TestProvider
  */
-@Tool(name = "web-test")
+@ToolProvider(name = "web-test")
 @Slf4j
 public class WebTestTool {
 

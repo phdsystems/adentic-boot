@@ -1,9 +1,9 @@
 package dev.adeengineer.adentic.tool.marketdata;
 
-import dev.adeengineer.adentic.boot.annotations.provider.Tool;
 import dev.adeengineer.adentic.tool.marketdata.config.MarketDataConfig;
 import dev.adeengineer.adentic.tool.marketdata.model.*;
 import dev.adeengineer.adentic.tool.marketdata.provider.*;
+import dev.adeengineer.annotation.provider.ToolProvider;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -57,7 +57,7 @@ import reactor.core.publisher.Mono;
  * @see MarketDataProvider
  * @see DataProvider
  */
-@Tool(name = "market-data")
+@ToolProvider(name = "market-data")
 @Slf4j
 public class MarketDataTool {
 

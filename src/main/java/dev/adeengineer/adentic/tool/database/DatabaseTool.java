@@ -1,11 +1,11 @@
 package dev.adeengineer.adentic.tool.database;
 
-import dev.adeengineer.adentic.boot.annotations.provider.Tool;
 import dev.adeengineer.adentic.tool.database.config.DatabaseConfig;
 import dev.adeengineer.adentic.tool.database.model.ConnectionInfo;
 import dev.adeengineer.adentic.tool.database.model.QueryResult;
 import dev.adeengineer.adentic.tool.database.model.TransactionResult;
 import dev.adeengineer.adentic.tool.database.provider.*;
+import dev.adeengineer.annotation.provider.ToolProvider;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -61,7 +61,7 @@ import reactor.core.publisher.Mono;
  * @see DatabaseConfig
  * @see DatabaseProvider
  */
-@Tool(name = "database")
+@ToolProvider(name = "database")
 @Slf4j
 public class DatabaseTool {
 

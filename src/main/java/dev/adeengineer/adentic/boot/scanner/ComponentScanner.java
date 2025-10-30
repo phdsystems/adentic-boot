@@ -3,17 +3,18 @@ package dev.adeengineer.adentic.boot.scanner;
 import dev.adeengineer.adentic.boot.annotations.Component;
 import dev.adeengineer.adentic.boot.annotations.RestController;
 import dev.adeengineer.adentic.boot.annotations.Service;
-import dev.adeengineer.adentic.boot.annotations.provider.Evaluation;
-import dev.adeengineer.adentic.boot.annotations.provider.Infrastructure;
-import dev.adeengineer.adentic.boot.annotations.provider.LLM;
-import dev.adeengineer.adentic.boot.annotations.provider.Memory;
-import dev.adeengineer.adentic.boot.annotations.provider.Messaging;
-import dev.adeengineer.adentic.boot.annotations.provider.Orchestration;
-import dev.adeengineer.adentic.boot.annotations.provider.Queue;
-import dev.adeengineer.adentic.boot.annotations.provider.Storage;
-import dev.adeengineer.adentic.boot.annotations.provider.Tool;
-import dev.adeengineer.adentic.boot.annotations.service.AgentService;
-import dev.adeengineer.adentic.boot.annotations.service.DomainService;
+import dev.adeengineer.annotation.provider.DatabaseProvider;
+import dev.adeengineer.annotation.provider.EvaluationProvider;
+import dev.adeengineer.annotation.provider.InfrastructureProvider;
+import dev.adeengineer.annotation.provider.MemoryProvider;
+import dev.adeengineer.annotation.provider.MessageBrokerProvider;
+import dev.adeengineer.annotation.provider.OrchestrationProvider;
+import dev.adeengineer.annotation.provider.StorageProvider;
+import dev.adeengineer.annotation.provider.TaskQueueProvider;
+import dev.adeengineer.annotation.provider.TextGenerationProvider;
+import dev.adeengineer.annotation.provider.ToolProvider;
+import dev.adeengineer.annotation.provider.WebSearchProvider;
+import dev.adeengineer.annotation.provider.WebTestProvider;
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.net.URL;
@@ -31,9 +32,11 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <ul>
  *   <li>Core: {@link Component}, {@link Service}, {@link RestController}
- *   <li>Providers: {@link LLM}, {@link Infrastructure}, {@link Storage}, {@link Messaging}, {@link
- *       Orchestration}, {@link Memory}, {@link Queue}, {@link Tool}, {@link Evaluation}
- *   <li>Services: {@link DomainService}, {@link AgentService}
+ *   <li>Providers: {@link TextGenerationProvider}, {@link InfrastructureProvider}, {@link
+ *       StorageProvider}, {@link MessageBrokerProvider}, {@link OrchestrationProvider}, {@link
+ *       MemoryProvider}, {@link TaskQueueProvider}, {@link ToolProvider}, {@link
+ *       EvaluationProvider}, {@link WebSearchProvider}, {@link WebTestProvider}, {@link
+ *       DatabaseProvider}
  * </ul>
  *
  * <p>Example usage:
@@ -48,7 +51,7 @@ import lombok.extern.slf4j.Slf4j;
  * Map<String, Set<Class<?>>> providers = scanner.scanProviders();
  *
  * // Scan specific annotation type
- * Set<Class<?>> llmProviders = scanner.scanForAnnotation(LLM.class);
+ * Set<Class<?>> llmProviders = scanner.scanForAnnotation(TextGenerationProvider.class);
  * }</pre>
  */
 @Slf4j
@@ -57,7 +60,7 @@ public class ComponentScanner {
   /**
    * All recognized component annotation types.
    *
-   * <p>Includes core annotations, provider annotations, and service annotations.
+   * <p>Includes core annotations and provider annotations from adentic-annotation.
    */
   private static final List<Class<? extends Annotation>> COMPONENT_ANNOTATIONS =
       List.of(
@@ -66,18 +69,18 @@ public class ComponentScanner {
           Service.class,
           RestController.class,
           // Provider annotations
-          LLM.class,
-          Infrastructure.class,
-          Storage.class,
-          Messaging.class,
-          Orchestration.class,
-          Memory.class,
-          Queue.class,
-          Tool.class,
-          Evaluation.class,
-          // Service annotations
-          DomainService.class,
-          AgentService.class);
+          TextGenerationProvider.class,
+          InfrastructureProvider.class,
+          StorageProvider.class,
+          MessageBrokerProvider.class,
+          OrchestrationProvider.class,
+          MemoryProvider.class,
+          TaskQueueProvider.class,
+          ToolProvider.class,
+          EvaluationProvider.class,
+          WebSearchProvider.class,
+          WebTestProvider.class,
+          DatabaseProvider.class);
 
   private final String basePackage;
   private final ClassLoader classLoader;
@@ -165,15 +168,18 @@ public class ComponentScanner {
    * <p>Categories:
    *
    * <ul>
-   *   <li>"llm" - LLM providers (OpenAI, Anthropic, etc.)
+   *   <li>"text-generation" - Text generation providers (OpenAI, Anthropic, Ollama, etc.)
    *   <li>"infrastructure" - Infrastructure providers (Docker, Local, etc.)
    *   <li>"storage" - Storage providers
-   *   <li>"messaging" - Messaging providers (Kafka, RabbitMQ, etc.)
+   *   <li>"messaging" - Message broker providers (Kafka, RabbitMQ, etc.)
    *   <li>"orchestration" - Orchestration providers
    *   <li>"memory" - Memory providers
-   *   <li>"queue" - Queue providers
+   *   <li>"queue" - Task queue providers
    *   <li>"tool" - Tool providers
    *   <li>"evaluation" - Evaluation providers
+   *   <li>"web-search" - Web search providers
+   *   <li>"web-test" - Web test providers
+   *   <li>"database" - Database providers
    * </ul>
    *
    * @return map of provider category to provider classes
@@ -181,15 +187,18 @@ public class ComponentScanner {
   public Map<String, Set<Class<?>>> scanProviders() {
     Map<String, Set<Class<?>>> providers = new LinkedHashMap<>();
 
-    providers.put("llm", scanForAnnotation(LLM.class));
-    providers.put("infrastructure", scanForAnnotation(Infrastructure.class));
-    providers.put("storage", scanForAnnotation(Storage.class));
-    providers.put("messaging", scanForAnnotation(Messaging.class));
-    providers.put("orchestration", scanForAnnotation(Orchestration.class));
-    providers.put("memory", scanForAnnotation(Memory.class));
-    providers.put("queue", scanForAnnotation(Queue.class));
-    providers.put("tool", scanForAnnotation(Tool.class));
-    providers.put("evaluation", scanForAnnotation(Evaluation.class));
+    providers.put("text-generation", scanForAnnotation(TextGenerationProvider.class));
+    providers.put("infrastructure", scanForAnnotation(InfrastructureProvider.class));
+    providers.put("storage", scanForAnnotation(StorageProvider.class));
+    providers.put("messaging", scanForAnnotation(MessageBrokerProvider.class));
+    providers.put("orchestration", scanForAnnotation(OrchestrationProvider.class));
+    providers.put("memory", scanForAnnotation(MemoryProvider.class));
+    providers.put("queue", scanForAnnotation(TaskQueueProvider.class));
+    providers.put("tool", scanForAnnotation(ToolProvider.class));
+    providers.put("evaluation", scanForAnnotation(EvaluationProvider.class));
+    providers.put("web-search", scanForAnnotation(WebSearchProvider.class));
+    providers.put("web-test", scanForAnnotation(WebTestProvider.class));
+    providers.put("database", scanForAnnotation(DatabaseProvider.class));
 
     int totalProviders = providers.values().stream().mapToInt(Set::size).sum();
     log.info(

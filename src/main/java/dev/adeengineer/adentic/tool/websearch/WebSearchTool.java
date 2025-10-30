@@ -1,9 +1,9 @@
 package dev.adeengineer.adentic.tool.websearch;
 
-import dev.adeengineer.adentic.boot.annotations.provider.Tool;
 import dev.adeengineer.adentic.tool.websearch.config.WebSearchConfig;
 import dev.adeengineer.adentic.tool.websearch.model.*;
 import dev.adeengineer.adentic.tool.websearch.provider.DuckDuckGoSearchProvider;
+import dev.adeengineer.annotation.provider.ToolProvider;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -48,7 +48,7 @@ import reactor.core.publisher.Mono;
  * @see SearchResult
  * @see SearchRequest
  */
-@Tool(name = "web-search")
+@ToolProvider(name = "web-search")
 @Slf4j
 public class WebSearchTool {
 

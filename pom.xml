@@ -53,6 +53,12 @@
       <artifactId>adentic-core</artifactId>
     </dependency>
 
+    <!-- Adentic Annotation - Managed by BOM -->
+    <dependency>
+      <groupId>dev.adeengineer</groupId>
+      <artifactId>adentic-annotation</artifactId>
+    </dependency>
+
     <!-- Javalin - Lightweight HTTP server -->
     <dependency>
       <groupId>io.javalin</groupId>
