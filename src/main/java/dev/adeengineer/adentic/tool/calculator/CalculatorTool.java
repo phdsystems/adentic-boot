@@ -218,7 +218,8 @@ public class CalculatorTool {
     if (size % 2 == 0) {
       BigDecimal mid1 = sorted.get(size / 2 - 1);
       BigDecimal mid2 = sorted.get(size / 2);
-      return mid1.add(mid2).divide(BigDecimal.valueOf(2), config.getRoundingMode());
+      return mid1.add(mid2)
+          .divide(BigDecimal.valueOf(2), config.getMaxPrecision(), config.getRoundingMode());
     } else {
       return sorted.get(size / 2);
     }
