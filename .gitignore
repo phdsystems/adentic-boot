@@ -43,4 +43,58 @@ gradle-app.setting
 ### Logs ###
 *.log
 logs/
+
+### OS Files ###
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+### Environment & Secrets ###
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+credentials/
+
+### Test & Coverage Reports ###
+.reports/
+coverage/
+*.exec
+*.ser
+
+### Security Scans ###
+dependency-check-report.html
+dependency-check-report.json
+spotbugs.xml
+spotbugs.html
+
+### Temporary Files ###
+*.tmp
+*.temp
+*.swp
+*.bak
+*.orig
+tmp/
+temp/
+
+### Build Artifacts ###
+*.jar
+*.war
+*.ear
+*.class
+*.dll
+*.exe
+*.o
+*.so
+!gradle/wrapper/*.jar
+!**/gradle-wrapper.jar
+
+### Project Specific ###
 examples/adentic-boot-example/dev/
