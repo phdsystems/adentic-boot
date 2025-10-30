@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adentic Boot - Agent Builder</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+        .container { display: flex; height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: #1e293b;
+            border-right: 1px solid #334155;
+            padding: 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3b82f6;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 8px;
+        }
+        .nav-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-item:hover { background: #334155; }
+        .nav-item.active { background: #3b82f6; color: white; }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .header {
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 24px; color: white; }
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-secondary {
+            background: #334155;
+            color: #e2e8f0;
+        }
+
+        /* Builder Content */
+        .builder-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            height: calc(100vh - 81px);
+        }
+
+        /* Form Section */
+        .form-section {
+            padding: 30px;
+            overflow-y: auto;
+        }
+        .form-group {
+            margin-bottom: 24px;
+        }
+        .form-label {
+            display: block;
+            color: #e2e8f0;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-family: inherit;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .form-hint {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        /* Section */
+        .section {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Tool Selector */
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .tool-card {
+            padding: 16px;
+            background: #0f172a;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tool-card:hover {
+            border-color: #3b82f6;
+        }
+        .tool-card.selected {
+            border-color: #3b82f6;
+            background: #1e40af15;
+        }
+        .tool-card h4 {
+            color: white;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        .tool-card p {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        /* Preview Section */
+        .preview-section {
+            background: #1e293b;
+            border-left: 1px solid #334155;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        .preview-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .code-block {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #94a3b8;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        .code-line { margin-bottom: 4px; }
+        .code-keyword { color: #8b5cf6; }
+        .code-string { color: #10b981; }
+        .code-comment { color: #64748b; }
+        .code-function { color: #3b82f6; }
+
+        /* Tag */
+        .tag {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #334155;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        .tag-close {
+            margin-left: 4px;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+
+        /* Checkbox */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .checkbox-item label {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <span>Adentic Boot</span>
+            </div>
+            <div class="nav-item">
+                <span>📊</span>
+                <span>Dashboard</span>
+            </div>
+            <div class="nav-item active">
+                <span>🤖</span>
+                <span>Agents</span>
+            </div>
+            <div class="nav-item">
+                <span>⚙️</span>
+                <span>Workflows</span>
+            </div>
+            <div class="nav-item">
+                <span>🛠️</span>
+                <span>Tools</span>
+            </div>
+            <div class="nav-item">
+                <span>📈</span>
+                <span>Monitoring</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main">
+            <div class="header">
+                <h1>🤖 Create New Agent</h1>
+                <div class="header-actions">
+                    <button class="btn btn-secondary">Cancel</button>
+                    <button class="btn btn-primary">💾 Save Agent</button>
+                </div>
+            </div>
+
+            <div class="builder-content">
+                <!-- Form Section -->
+                <div class="form-section">
+                    <!-- Basic Information -->
+                    <div class="section">
+                        <h3 class="section-title">📝 Basic Information</h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Agent Name *</label>
+                            <input type="text" class="form-input" value="Financial Analysis Agent" placeholder="e.g., Code Review Agent">
+                            <div class="form-hint">Give your agent a descriptive name</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-textarea" placeholder="Describe what your agent does...">Analyzes financial data, generates reports, and provides investment recommendations using real-time market data.</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Type</label>
+                            <select class="form-select">
+                                <option>LLM Agent</option>
+                                <option>Workflow Agent</option>
+                                <option>RAG Agent</option>
+                                <option>Tool Agent</option>
+                                <option>Multi-Agent System</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- LLM Configuration -->
+                    <div class="section">
+                        <h3 class="section-title">🧠 LLM Configuration</h3>
+
+                        <div class="form-group">
+                            <label class="form-label">Provider</label>
+                            <select class="form-select">
+                                <option>OpenAI</option>
+                                <option>Anthropic (Claude)</option>
+                                <option>Groq</option>
+                                <option>Ollama (Local)</option>
+                                <option>Together AI</option>
+                                <option>HuggingFace</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Model</label>
+                            <select class="form-select">
+                                <option>gpt-4o</option>
+                                <option>gpt-4-turbo</option>
+                                <option>claude-3.5-sonnet</option>
+                                <option>claude-3-opus</option>
+                                <option>llama-3.1-70b</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Temperature</label>
+                            <input type="range" min="0" max="2" step="0.1" value="0.7" style="width: 100%;">
+                            <div style="display: flex; justify-content: space-between; color: #94a3b8; font-size: 12px;">
+                                <span>Precise (0.0)</span>
+                                <span style="color: #3b82f6;">0.7</span>
+                                <span>Creative (2.0)</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Max Tokens</label>
+                            <input type="number" class="form-input" value="2048" min="1" max="8192">
+                        </div>
+                    </div>
+
+                    <!-- Tools Selection -->
+                    <div class="section">
+                        <h3 class="section-title">🛠️ Tools & Extensions</h3>
+
+                        <div class="tool-grid">
+                            <div class="tool-card selected">
+                                <h4>📊 Market Data</h4>
+                                <p>Real-time stock prices</p>
+                            </div>
+                            <div class="tool-card selected">
+                                <h4>🧮 Calculator</h4>
+                                <p>Financial calculations</p>
+                            </div>
+                            <div class="tool-card selected">
+                                <h4>📈 Data Analysis</h4>
+                                <p>Pandas, NumPy</p>
+                            </div>
+                            <div class="tool-card">
+                                <h4>📧 Email</h4>
+                                <p>Send notifications</p>
+                            </div>
+                            <div class="tool-card">
+                                <h4>🌐 HTTP Client</h4>
+                                <p>API requests</p>
+                            </div>
+                            <div class="tool-card">
+                                <h4>🗄️ Database</h4>
+                                <p>SQL queries</p>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 16px;">
+                            <span class="tag">Market Data <span class="tag-close">×</span></span>
+                            <span class="tag">Calculator <span class="tag-close">×</span></span>
+                            <span class="tag">Data Analysis <span class="tag-close">×</span></span>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <div class="section">
+                        <h3 class="section-title">⚙️ Advanced Options</h3>
+
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="retry" checked>
+                                <label for="retry">Enable Retry Logic (max 3 attempts)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="ratelimit" checked>
+                                <label for="ratelimit">Rate Limiting (100 req/min)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="cache">
+                                <label for="cache">Response Caching</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="streaming" checked>
+                                <label for="streaming">Streaming Responses</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div class="preview-section">
+                    <h3 class="preview-title">📄 Code Preview</h3>
+
+                    <div class="code-block">
+<div class="code-line"><span class="code-comment">// Auto-generated configuration</span></div>
+<div class="code-line"><span class="code-keyword">@AgentConfig</span></div>
+<div class="code-line"><span class="code-keyword">public class</span> <span class="code-function">FinancialAnalysisAgent</span> {</div>
+<div class="code-line"></div>
+<div class="code-line">    <span class="code-comment">// LLM Provider</span></div>
+<div class="code-line">    <span class="code-keyword">@LLM</span>(</div>
+<div class="code-line">        provider = <span class="code-string">"openai"</span>,</div>
+<div class="code-line">        model = <span class="code-string">"gpt-4o"</span>,</div>
+<div class="code-line">        temperature = <span class="code-string">0.7</span>,</div>
+<div class="code-line">        maxTokens = <span class="code-string">2048</span></div>
+<div class="code-line">    )</div>
+<div class="code-line">    <span class="code-keyword">private</span> TextGenerationProvider llm;</div>
+<div class="code-line"></div>
+<div class="code-line">    <span class="code-comment">// Tools</span></div>
+<div class="code-line">    <span class="code-keyword">@Tool</span></div>
+<div class="code-line">    <span class="code-keyword">private</span> MarketDataTool marketData;</div>
+<div class="code-line"></div>
+<div class="code-line">    <span class="code-keyword">@Tool</span></div>
+<div class="code-line">    <span class="code-keyword">private</span> CalculatorTool calculator;</div>
+<div class="code-line"></div>
+<div class="code-line">    <span class="code-keyword">@Tool</span></div>
+<div class="code-line">    <span class="code-keyword">private</span> DataAnalysisTool analysis;</div>
+<div class="code-line"></div>
+<div class="code-line">    <span class="code-comment">// Retry Policy</span></div>
+<div class="code-line">    <span class="code-keyword">@Retry</span>(</div>
+<div class="code-line">        maxAttempts = <span class="code-string">3</span>,</div>
+<div class="code-line">        backoff = <span class="code-string">EXPONENTIAL</span></div>
+<div class="code-line">    )</div>
+<div class="code-line"></div>
+<div class="code-line">    <span class="code-comment">// Rate Limiting</span></div>
+<div class="code-line">    <span class="code-keyword">@RateLimit</span>(</div>
+<div class="code-line">        requests = <span class="code-string">100</span>,</div>
+<div class="code-line">        per = <span class="code-string">MINUTE</span></div>
+<div class="code-line">    )</div>
+<div class="code-line"></div>
+<div class="code-line">    <span class="code-keyword">public</span> <span class="code-function">TaskResult</span> <span class="code-function">analyze</span>(</div>
+<div class="code-line">        TaskRequest request</div>
+<div class="code-line">    ) {</div>
+<div class="code-line">        <span class="code-comment">// Your agent logic here</span></div>
+<div class="code-line">    }</div>
+<div class="code-line">}</div>
+                    </div>
+
+                    <h3 class="preview-title" style="margin-top: 24px;">📦 Dependencies</h3>
+                    <div class="code-block">
+<div class="code-line"><span class="code-comment">// Maven dependencies</span></div>
+<div class="code-line">&lt;<span class="code-keyword">dependency</span>&gt;</div>
+<div class="code-line">    &lt;<span class="code-keyword">groupId</span>&gt;dev.adeengineer&lt;/<span class="code-keyword">groupId</span>&gt;</div>
+<div class="code-line">    &lt;<span class="code-keyword">artifactId</span>&gt;adentic-boot&lt;/<span class="code-keyword">artifactId</span>&gt;</div>
+<div class="code-line">&lt;/<span class="code-keyword">dependency</span>&gt;</div>
+<div class="code-line"></div>
+<div class="code-line">&lt;<span class="code-keyword">dependency</span>&gt;</div>
+<div class="code-line">    &lt;<span class="code-keyword">groupId</span>&gt;com.example&lt;/<span class="code-keyword">groupId</span>&gt;</div>
+<div class="code-line">    &lt;<span class="code-keyword">artifactId</span>&gt;marketdata-tool&lt;/<span class="code-keyword">artifactId</span>&gt;</div>
+<div class="code-line">&lt;/<span class="code-keyword">dependency</span>&gt;</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

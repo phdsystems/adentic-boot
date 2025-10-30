@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adentic Boot - Workflow Designer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            overflow: hidden;
+        }
+        .container { display: flex; height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: #1e293b;
+            border-right: 1px solid #334155;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3b82f6;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 8px;
+        }
+        .nav-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-item:hover { background: #334155; }
+        .nav-item.active { background: #3b82f6; color: white; }
+        .nav-icon { font-size: 18px; }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            padding: 16px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .workflow-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .workflow-title h1 {
+            font-size: 20px;
+            color: white;
+        }
+        .workflow-title input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            width: 300px;
+        }
+        .workflow-title input:hover {
+            background: #334155;
+        }
+        .workflow-meta {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-left: 12px;
+        }
+        .top-bar-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-secondary {
+            background: #334155;
+            color: #e2e8f0;
+        }
+        .btn-secondary:hover { background: #475569; }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover { background: #059669; }
+
+        /* Workspace */
+        .workspace {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Node Palette */
+        .node-palette {
+            width: 280px;
+            background: #1e293b;
+            border-right: 1px solid #334155;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .palette-section {
+            margin-bottom: 24px;
+        }
+        .palette-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+        .palette-node {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: move;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .palette-node:hover {
+            border-color: #3b82f6;
+            background: #1e293b;
+        }
+        .palette-node-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        .icon-agent { background: #3b82f633; color: #3b82f6; }
+        .icon-tool { background: #10b98133; color: #10b981; }
+        .icon-condition { background: #f59e0b33; color: #f59e0b; }
+        .icon-loop { background: #8b5cf633; color: #a78bfa; }
+        .icon-data { background: #06b6d433; color: #06b6d4; }
+        .palette-node-info h4 {
+            font-size: 14px;
+            color: white;
+            margin-bottom: 2px;
+        }
+        .palette-node-info p {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* Canvas */
+        .canvas {
+            flex: 1;
+            background: #0f172a;
+            position: relative;
+            overflow: auto;
+            background-image:
+                linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .canvas-content {
+            position: relative;
+            width: 2000px;
+            height: 2000px;
+            padding: 40px;
+        }
+
+        /* Workflow Nodes */
+        .workflow-node {
+            position: absolute;
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            padding: 16px;
+            min-width: 200px;
+            cursor: move;
+            transition: all 0.2s;
+        }
+        .workflow-node:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+        .workflow-node.selected {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .node-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .node-info h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 2px;
+        }
+        .node-info p {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .node-body {
+            border-top: 1px solid #334155;
+            padding-top: 12px;
+        }
+        .node-param {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .node-param-label {
+            color: #94a3b8;
+        }
+        .node-param-value {
+            color: white;
+            font-weight: 500;
+        }
+        .node-ports {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+        }
+        .port {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #334155;
+            border: 2px solid #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .port:hover {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            transform: scale(1.2);
+        }
+        .port-input { margin-left: -22px; }
+        .port-output { margin-right: -22px; }
+
+        /* Connection Lines */
+        .connection-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .connection-path {
+            fill: none;
+            stroke: #3b82f6;
+            stroke-width: 2;
+            stroke-linecap: round;
+        }
+
+        /* Properties Panel */
+        .properties-panel {
+            width: 320px;
+            background: #1e293b;
+            border-left: 1px solid #334155;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .panel-header {
+            margin-bottom: 20px;
+        }
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 8px;
+        }
+        .panel-subtitle {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .property-group {
+            margin-bottom: 24px;
+        }
+        .property-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .property-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .property-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .property-select {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .property-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            min-height: 80px;
+            resize: vertical;
+        }
+        .property-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .property-checkbox input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .property-checkbox label {
+            color: #e2e8f0;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .property-divider {
+            border: none;
+            border-top: 1px solid #334155;
+            margin: 20px 0;
+        }
+        .btn-block {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* Empty State */
+        .empty-state {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #64748b;
+        }
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        .empty-state h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #94a3b8;
+        }
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-blue { background: #3b82f633; color: #3b82f6; }
+        .badge-green { background: #10b98133; color: #10b981; }
+        .badge-yellow { background: #f59e0b33; color: #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <div class="logo-icon"></div>
+                <span>Adentic Boot</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">📊</span>
+                <span>Dashboard</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">🤖</span>
+                <span>Agents</span>
+            </div>
+            <div class="nav-item active">
+                <span class="nav-icon">⚙️</span>
+                <span>Workflows</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">🛠️</span>
+                <span>Tools</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">📈</span>
+                <span>Monitoring</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">📦</span>
+                <span>Providers</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">⚡</span>
+                <span>Extensions</span>
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">📚</span>
+                <span>Documentation</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="workflow-title">
+                    <input type="text" value="Trading Analysis Workflow" />
+                    <span class="workflow-meta">
+                        <span class="badge badge-green">● Active</span>
+                        <span style="margin-left: 8px;">Last edited 5 min ago</span>
+                    </span>
+                </div>
+                <div class="top-bar-actions">
+                    <button class="btn btn-secondary">💾 Save Draft</button>
+                    <button class="btn btn-secondary">▶️ Test Run</button>
+                    <button class="btn btn-success">✓ Deploy</button>
+                </div>
+            </div>
+
+            <!-- Workspace -->
+            <div class="workspace">
+                <!-- Node Palette -->
+                <div class="node-palette">
+                    <div class="palette-section">
+                        <div class="palette-title">Agents</div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-agent">🤖</div>
+                            <div class="palette-node-info">
+                                <h4>LLM Agent</h4>
+                                <p>Text generation agent</p>
+                            </div>
+                        </div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-agent">📊</div>
+                            <div class="palette-node-info">
+                                <h4>Analysis Agent</h4>
+                                <p>Data analysis & insights</p>
+                            </div>
+                        </div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-agent">🔍</div>
+                            <div class="palette-node-info">
+                                <h4>Research Agent</h4>
+                                <p>Web search & summarize</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-section">
+                        <div class="palette-title">Tools</div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-tool">📈</div>
+                            <div class="palette-node-info">
+                                <h4>Market Data</h4>
+                                <p>Fetch stock prices</p>
+                            </div>
+                        </div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-tool">🧮</div>
+                            <div class="palette-node-info">
+                                <h4>Calculator</h4>
+                                <p>Math operations</p>
+                            </div>
+                        </div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-tool">📧</div>
+                            <div class="palette-node-info">
+                                <h4>Email</h4>
+                                <p>Send notifications</p>
+                            </div>
+                        </div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-tool">🗄️</div>
+                            <div class="palette-node-info">
+                                <h4>Database</h4>
+                                <p>Query & store data</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-section">
+                        <div class="palette-title">Control Flow</div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-condition">◆</div>
+                            <div class="palette-node-info">
+                                <h4>Condition</h4>
+                                <p>If/else branching</p>
+                            </div>
+                        </div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-loop">🔁</div>
+                            <div class="palette-node-info">
+                                <h4>Loop</h4>
+                                <p>Iterate over data</p>
+                            </div>
+                        </div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-loop">⚡</div>
+                            <div class="palette-node-info">
+                                <h4>Parallel</h4>
+                                <p>Execute in parallel</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="palette-section">
+                        <div class="palette-title">Data</div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-data">📥</div>
+                            <div class="palette-node-info">
+                                <h4>Input</h4>
+                                <p>Workflow input data</p>
+                            </div>
+                        </div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-data">📤</div>
+                            <div class="palette-node-info">
+                                <h4>Output</h4>
+                                <p>Workflow output data</p>
+                            </div>
+                        </div>
+                        <div class="palette-node">
+                            <div class="palette-node-icon icon-data">🔄</div>
+                            <div class="palette-node-info">
+                                <h4>Transform</h4>
+                                <p>Data transformation</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Canvas -->
+                <div class="canvas">
+                    <div class="canvas-content">
+                        <!-- SVG for connection lines -->
+                        <svg class="connection-line" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                            <!-- Input to Market Data -->
+                            <path class="connection-path" d="M 280 100 Q 350 100 350 180 Q 350 200 380 200" />
+                            <!-- Market Data to Analysis Agent -->
+                            <path class="connection-path" d="M 580 220 Q 650 220 650 280 Q 650 300 680 300" />
+                            <!-- Analysis Agent to Condition -->
+                            <path class="connection-path" d="M 880 320 Q 950 320 950 280 Q 950 260 980 260" />
+                            <!-- Condition (YES) to Email -->
+                            <path class="connection-path" d="M 1180 240 Q 1250 240 1250 200 Q 1250 180 1280 180" />
+                            <!-- Condition (NO) to Database -->
+                            <path class="connection-path" d="M 1180 280 Q 1250 280 1250 340 Q 1250 360 1280 360" />
+                            <!-- Email to Output -->
+                            <path class="connection-path" d="M 1480 200 Q 1550 200 1550 260 Q 1550 280 1580 280" />
+                            <!-- Database to Output -->
+                            <path class="connection-path" d="M 1480 380 Q 1550 380 1550 300 Q 1550 280 1580 280" />
+                        </svg>
+
+                        <!-- Workflow Nodes -->
+
+                        <!-- Input Node -->
+                        <div class="workflow-node" style="top: 60px; left: 80px;">
+                            <div class="node-header">
+                                <div class="node-icon icon-data">📥</div>
+                                <div class="node-info">
+                                    <h3>Workflow Input</h3>
+                                    <p>Start</p>
+                                </div>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-param">
+                                    <span class="node-param-label">Symbol:</span>
+                                    <span class="node-param-value">AAPL</span>
+                                </div>
+                                <div class="node-param">
+                                    <span class="node-param-label">Period:</span>
+                                    <span class="node-param-value">1d</span>
+                                </div>
+                            </div>
+                            <div class="node-ports">
+                                <div></div>
+                                <div class="port port-output"></div>
+                            </div>
+                        </div>
+
+                        <!-- Market Data Tool Node -->
+                        <div class="workflow-node selected" style="top: 160px; left: 380px;">
+                            <div class="node-header">
+                                <div class="node-icon icon-tool">📈</div>
+                                <div class="node-info">
+                                    <h3>Market Data Tool</h3>
+                                    <p>Fetch Stock Prices</p>
+                                </div>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-param">
+                                    <span class="node-param-label">Provider:</span>
+                                    <span class="node-param-value">Yahoo Finance</span>
+                                </div>
+                                <div class="node-param">
+                                    <span class="node-param-label">Data Type:</span>
+                                    <span class="node-param-value">OHLC</span>
+                                </div>
+                                <div class="node-param">
+                                    <span class="node-param-label">Timeout:</span>
+                                    <span class="node-param-value">30s</span>
+                                </div>
+                            </div>
+                            <div class="node-ports">
+                                <div class="port port-input"></div>
+                                <div class="port port-output"></div>
+                            </div>
+                        </div>
+
+                        <!-- Analysis Agent Node -->
+                        <div class="workflow-node" style="top: 260px; left: 680px;">
+                            <div class="node-header">
+                                <div class="node-icon icon-agent">📊</div>
+                                <div class="node-info">
+                                    <h3>Analysis Agent</h3>
+                                    <p>GPT-4</p>
+                                </div>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-param">
+                                    <span class="node-param-label">Model:</span>
+                                    <span class="node-param-value">gpt-4-turbo</span>
+                                </div>
+                                <div class="node-param">
+                                    <span class="node-param-label">Temperature:</span>
+                                    <span class="node-param-value">0.3</span>
+                                </div>
+                                <div class="node-param">
+                                    <span class="node-param-label">Task:</span>
+                                    <span class="node-param-value">Trend Analysis</span>
+                                </div>
+                            </div>
+                            <div class="node-ports">
+                                <div class="port port-input"></div>
+                                <div class="port port-output"></div>
+                            </div>
+                        </div>
+
+                        <!-- Condition Node -->
+                        <div class="workflow-node" style="top: 220px; left: 980px;">
+                            <div class="node-header">
+                                <div class="node-icon icon-condition">◆</div>
+                                <div class="node-info">
+                                    <h3>Check Signal</h3>
+                                    <p>Condition</p>
+                                </div>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-param">
+                                    <span class="node-param-label">Condition:</span>
+                                    <span class="node-param-value">signal == "BUY"</span>
+                                </div>
+                                <div class="node-param">
+                                    <span class="node-param-label">True Path:</span>
+                                    <span class="node-param-value" style="color: #10b981;">Send Alert</span>
+                                </div>
+                                <div class="node-param">
+                                    <span class="node-param-label">False Path:</span>
+                                    <span class="node-param-value" style="color: #64748b;">Log Only</span>
+                                </div>
+                            </div>
+                            <div class="node-ports">
+                                <div class="port port-input"></div>
+                                <div class="port port-output"></div>
+                            </div>
+                        </div>
+
+                        <!-- Email Node (True Path) -->
+                        <div class="workflow-node" style="top: 140px; left: 1280px;">
+                            <div class="node-header">
+                                <div class="node-icon icon-tool">📧</div>
+                                <div class="node-info">
+                                    <h3>Send Email Alert</h3>
+                                    <p>Email Tool</p>
+                                </div>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-param">
+                                    <span class="node-param-label">To:</span>
+                                    <span class="node-param-value">trader@example.com</span>
+                                </div>
+                                <div class="node-param">
+                                    <span class="node-param-label">Subject:</span>
+                                    <span class="node-param-value">BUY Signal Detected</span>
+                                </div>
+                            </div>
+                            <div class="node-ports">
+                                <div class="port port-input"></div>
+                                <div class="port port-output"></div>
+                            </div>
+                        </div>
+
+                        <!-- Database Node (False Path) -->
+                        <div class="workflow-node" style="top: 320px; left: 1280px;">
+                            <div class="node-header">
+                                <div class="node-icon icon-tool">🗄️</div>
+                                <div class="node-info">
+                                    <h3>Log to Database</h3>
+                                    <p>Database Tool</p>
+                                </div>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-param">
+                                    <span class="node-param-label">Provider:</span>
+                                    <span class="node-param-value">PostgreSQL</span>
+                                </div>
+                                <div class="node-param">
+                                    <span class="node-param-label">Table:</span>
+                                    <span class="node-param-value">analysis_log</span>
+                                </div>
+                            </div>
+                            <div class="node-ports">
+                                <div class="port port-input"></div>
+                                <div class="port port-output"></div>
+                            </div>
+                        </div>
+
+                        <!-- Output Node -->
+                        <div class="workflow-node" style="top: 240px; left: 1580px;">
+                            <div class="node-header">
+                                <div class="node-icon icon-data">📤</div>
+                                <div class="node-info">
+                                    <h3>Workflow Output</h3>
+                                    <p>End</p>
+                                </div>
+                            </div>
+                            <div class="node-body">
+                                <div class="node-param">
+                                    <span class="node-param-label">Status:</span>
+                                    <span class="node-param-value" style="color: #10b981;">Completed</span>
+                                </div>
+                                <div class="node-param">
+                                    <span class="node-param-label">Format:</span>
+                                    <span class="node-param-value">JSON</span>
+                                </div>
+                            </div>
+                            <div class="node-ports">
+                                <div class="port port-input"></div>
+                                <div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Properties Panel -->
+                <div class="properties-panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Market Data Tool</h2>
+                        <p class="panel-subtitle">Configure tool settings</p>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Node Name</label>
+                        <input type="text" class="property-input" value="Market Data Tool" />
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Description</label>
+                        <textarea class="property-textarea">Fetch real-time stock market data using Yahoo Finance API</textarea>
+                    </div>
+
+                    <hr class="property-divider" />
+
+                    <div class="property-group">
+                        <label class="property-label">Data Provider</label>
+                        <select class="property-select">
+                            <option>Yahoo Finance</option>
+                            <option>Alpha Vantage</option>
+                            <option>IEX Cloud</option>
+                            <option>Polygon.io</option>
+                        </select>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Data Type</label>
+                        <select class="property-select">
+                            <option>OHLC (Open, High, Low, Close)</option>
+                            <option>Real-time Quote</option>
+                            <option>Historical Data</option>
+                            <option>Technical Indicators</option>
+                        </select>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Interval</label>
+                        <select class="property-select">
+                            <option>1d (1 Day)</option>
+                            <option>1h (1 Hour)</option>
+                            <option>15m (15 Minutes)</option>
+                            <option>5m (5 Minutes)</option>
+                            <option>1m (1 Minute)</option>
+                        </select>
+                    </div>
+
+                    <div class="property-group">
+                        <label class="property-label">Request Timeout (seconds)</label>
+                        <input type="number" class="property-input" value="30" min="5" max="120" />
+                    </div>
+
+                    <hr class="property-divider" />
+
+                    <div class="property-group">
+                        <label class="property-label">Advanced Options</label>
+                        <div class="property-checkbox">
+                            <input type="checkbox" id="cache" checked />
+                            <label for="cache">Enable Caching</label>
+                        </div>
+                        <div class="property-checkbox">
+                            <input type="checkbox" id="retry" checked />
+                            <label for="retry">Auto Retry on Failure</label>
+                        </div>
+                        <div class="property-checkbox">
+                            <input type="checkbox" id="validate" />
+                            <label for="validate">Validate Response Data</label>
+                        </div>
+                    </div>
+
+                    <hr class="property-divider" />
+
+                    <button class="btn btn-primary btn-block">✓ Apply Changes</button>
+                    <button class="btn btn-secondary btn-block">✕ Cancel</button>
+                    <button class="btn btn-danger btn-block">🗑️ Delete Node</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
