@@ -4,23 +4,53 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import dev.adeengineer.adentic.tool.websearch.config.WebSearchConfig;
+import dev.adeengineer.adentic.tool.websearch.model.SearchMetadata;
 import dev.adeengineer.adentic.tool.websearch.model.SearchProvider;
 import dev.adeengineer.adentic.tool.websearch.model.SearchRequest;
 import dev.adeengineer.adentic.tool.websearch.model.SearchResult;
+import dev.adeengineer.adentic.tool.websearch.provider.DuckDuckGoSearchProvider;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 
 /** Comprehensive tests for WebSearchTool */
 @DisplayName("WebSearchTool Tests")
 class WebSearchToolTest {
 
   private WebSearchTool searchTool;
+  private StubDuckDuckGoSearchProvider stubProvider;
 
   @BeforeEach
   void setUp() {
-    searchTool = new WebSearchTool();
+    stubProvider = new StubDuckDuckGoSearchProvider();
+    searchTool = new WebSearchTool(WebSearchConfig.defaults(), stubProvider);
+  }
+
+  /** Stub implementation of DuckDuckGoSearchProvider for testing */
+  static class StubDuckDuckGoSearchProvider extends DuckDuckGoSearchProvider {
+    public StubDuckDuckGoSearchProvider() {
+      super(WebSearchConfig.defaults());
+    }
+
+    @Override
+    public Mono<SearchResult> search(SearchRequest request) {
+      // Return a successful mock result without making real HTTP calls
+      SearchMetadata metadata =
+          SearchMetadata.builder()
+              .query(request.getQuery())
+              .provider(SearchProvider.DUCKDUCKGO)
+              .resultCount(0)
+              .timestamp(Instant.now())
+              .queryTime(Duration.ofMillis(100))
+              .success(true)
+              .build();
+      return Mono.just(SearchResult.builder().metadata(metadata).items(new ArrayList<>()).build());
+    }
   }
 
   @Nested
@@ -119,7 +149,8 @@ class WebSearchToolTest {
     void testCaching() {
       WebSearchConfig config =
           WebSearchConfig.builder().cacheResults(true).cacheTtlMs(60000).build();
-      WebSearchTool tool = new WebSearchTool(config);
+      StubDuckDuckGoSearchProvider cacheStubProvider = new StubDuckDuckGoSearchProvider();
+      WebSearchTool tool = new WebSearchTool(config, cacheStubProvider);
 
       // First search
       SearchResult result1 = tool.search("cache test").block();
@@ -173,7 +204,8 @@ class WebSearchToolTest {
               .cacheResults(false)
               .build();
 
-      WebSearchTool tool = new WebSearchTool(config);
+      StubDuckDuckGoSearchProvider customStubProvider = new StubDuckDuckGoSearchProvider();
+      WebSearchTool tool = new WebSearchTool(config, customStubProvider);
       assertNotNull(tool);
     }
 

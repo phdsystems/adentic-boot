@@ -64,9 +64,20 @@ public class WebSearchTool {
 
   /** Constructor with custom configuration. */
   public WebSearchTool(WebSearchConfig config) {
+    this(config, null);
+  }
+
+  /**
+   * Constructor with custom configuration and provider (for testing).
+   *
+   * @param config the search configuration
+   * @param duckDuckGoProvider the DuckDuckGo search provider (null to create default)
+   */
+  public WebSearchTool(WebSearchConfig config, DuckDuckGoSearchProvider duckDuckGoProvider) {
     this.config = config;
     this.cache = new ConcurrentHashMap<>();
-    this.duckDuckGoProvider = new DuckDuckGoSearchProvider(config);
+    this.duckDuckGoProvider =
+        duckDuckGoProvider != null ? duckDuckGoProvider : new DuckDuckGoSearchProvider(config);
   }
 
   /**
