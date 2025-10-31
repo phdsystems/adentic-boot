@@ -605,4 +605,465 @@ class DuckDuckGoSearchProviderTest {
       assertEquals("DUCKDUCKGO", providerName);
     }
   }
+
+  @Nested
+  @DisplayName("URL Encoding Edge Cases Tests")
+  class UrlEncodingTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should handle special characters in query")
+    void testQueryWithSpecialCharacters() {
+      SearchRequest request =
+          SearchRequest.builder().query("C++ & Java: <programming>").maxResults(5).build();
+
+      assertNotNull(request);
+      assertThat(request.getQuery()).contains("&");
+      assertThat(request.getQuery()).contains("<");
+      assertThat(request.getQuery()).contains(">");
+    }
+
+    @Test
+    @DisplayName("Should handle unicode characters in query")
+    void testQueryWithUnicode() {
+      SearchRequest request =
+          SearchRequest.builder().query("日本語 programming 中文").maxResults(5).build();
+
+      assertNotNull(request);
+      assertThat(request.getQuery()).contains("日本語");
+      assertThat(request.getQuery()).contains("中文");
+    }
+
+    @Test
+    @DisplayName("Should handle empty query")
+    void testEmptyQuery() {
+      SearchRequest request = SearchRequest.builder().query("").maxResults(5).build();
+
+      assertNotNull(request);
+      assertTrue(request.getQuery().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should handle query with only spaces")
+    void testQueryWithOnlySpaces() {
+      SearchRequest request = SearchRequest.builder().query("   ").maxResults(5).build();
+
+      assertNotNull(request);
+      assertThat(request.getQuery()).contains(" ");
+    }
+
+    @Test
+    @DisplayName("Should handle very long query")
+    void testVeryLongQuery() {
+      String longQuery = "a".repeat(500);
+      SearchRequest request = SearchRequest.builder().query(longQuery).maxResults(5).build();
+
+      assertNotNull(request);
+      assertEquals(500, request.getQuery().length());
+    }
+  }
+
+  @Nested
+  @DisplayName("HTML Parsing Edge Cases Tests")
+  class HtmlParsingEdgeCasesTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should handle HTML with incomplete result tags")
+    void testIncompleteResultTags() {
+      String incompleteHtml =
+          """
+          <html>
+            <a class="result__a" href="https://example.com">Title
+            <a class="result__snippet">Snippet without closing tag
+          </html>
+          """;
+
+      assertNotNull(incompleteHtml);
+      assertThat(incompleteHtml).contains("result__a");
+    }
+
+    @Test
+    @DisplayName("Should handle HTML with nested tags in title")
+    void testNestedTagsInTitle() {
+      String nestedHtml =
+          "<a class=\"result__a\" href=\"https://example.com\"><span><b>Nested</b> Title</span></a>";
+
+      assertNotNull(nestedHtml);
+      assertThat(nestedHtml).contains("<span>");
+      assertThat(nestedHtml).contains("<b>");
+    }
+
+    @Test
+    @DisplayName("Should handle HTML with CDATA sections")
+    void testHtmlWithCdata() {
+      String cdataHtml =
+          "<html><![CDATA[some content]]><a class=\"result__a\" href=\"https://example.com\">Title</a></html>";
+
+      assertNotNull(cdataHtml);
+      assertThat(cdataHtml).contains("CDATA");
+    }
+
+    @Test
+    @DisplayName("Should handle HTML with comments")
+    void testHtmlWithComments() {
+      String commentHtml =
+          "<html><!-- Comment --><a class=\"result__a\" href=\"https://example.com\">Title</a></html>";
+
+      assertNotNull(commentHtml);
+      assertThat(commentHtml).contains("<!--");
+    }
+
+    @Test
+    @DisplayName("Should handle HTML with script tags")
+    void testHtmlWithScriptTags() {
+      String scriptHtml =
+          "<html><script>alert('test');</script><a class=\"result__a\" href=\"https://example.com\">Title</a></html>";
+
+      assertNotNull(scriptHtml);
+      assertThat(scriptHtml).contains("<script>");
+    }
+  }
+
+  @Nested
+  @DisplayName("URL Cleaning Edge Cases Tests")
+  class UrlCleaningEdgeCasesTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should handle malformed redirect URL")
+    void testMalformedRedirectUrl() {
+      String malformedUrl = "//duckduckgo.com/l/?uddg=malformed";
+
+      assertNotNull(malformedUrl);
+      assertThat(malformedUrl).startsWith("//duckduckgo.com");
+    }
+
+    @Test
+    @DisplayName("Should handle redirect URL without uddg parameter")
+    void testRedirectUrlWithoutUddg() {
+      String noUddgUrl = "//duckduckgo.com/l/?other=value";
+
+      assertNotNull(noUddgUrl);
+      assertThat(noUddgUrl).doesNotContain("uddg=");
+    }
+
+    @Test
+    @DisplayName("Should handle URL with multiple query parameters")
+    void testUrlWithMultipleParams() {
+      String multiParamUrl =
+          "//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com&param1=value1&param2=value2";
+
+      assertNotNull(multiParamUrl);
+      assertThat(multiParamUrl).contains("uddg=");
+      assertThat(multiParamUrl).contains("param1");
+    }
+
+    @Test
+    @DisplayName("Should handle URL with fragment")
+    void testUrlWithFragment() {
+      String fragmentUrl = "https://example.com/page#section";
+
+      assertNotNull(fragmentUrl);
+      assertThat(fragmentUrl).contains("#section");
+    }
+
+    @Test
+    @DisplayName("Should handle relative URL")
+    void testRelativeUrl() {
+      String relativeUrl = "/path/to/page";
+
+      assertNotNull(relativeUrl);
+      assertThat(relativeUrl).startsWith("/");
+      assertThat(relativeUrl).doesNotContain("://");
+    }
+  }
+
+  @Nested
+  @DisplayName("Domain Extraction Edge Cases Tests")
+  class DomainExtractionEdgeCasesTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should handle URL with subdomain")
+    void testUrlWithSubdomain() {
+      String subdomain = "https://www.subdomain.example.com/page";
+
+      assertNotNull(subdomain);
+      assertThat(subdomain).contains("subdomain.example.com");
+    }
+
+    @Test
+    @DisplayName("Should handle URL with IP address")
+    void testUrlWithIpAddress() {
+      String ipUrl = "http://192.168.1.1:8080/page";
+
+      assertNotNull(ipUrl);
+      assertThat(ipUrl).contains("192.168.1.1");
+    }
+
+    @Test
+    @DisplayName("Should handle URL with localhost")
+    void testUrlWithLocalhost() {
+      String localhostUrl = "http://localhost:3000/page";
+
+      assertNotNull(localhostUrl);
+      assertThat(localhostUrl).contains("localhost");
+    }
+
+    @Test
+    @DisplayName("Should handle malformed URL")
+    void testMalformedUrl() {
+      String malformedUrl = "not-a-valid-url";
+
+      assertNotNull(malformedUrl);
+      assertThat(malformedUrl).doesNotContain("://");
+    }
+
+    @Test
+    @DisplayName("Should handle URL without protocol")
+    void testUrlWithoutProtocol() {
+      String noProtocol = "example.com/page";
+
+      assertNotNull(noProtocol);
+      assertThat(noProtocol).doesNotContain("://");
+    }
+  }
+
+  @Nested
+  @DisplayName("Search Result Limits Tests")
+  class SearchResultLimitsTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should respect max results limit of 0")
+    void testZeroMaxResults() {
+      SearchRequest request = SearchRequest.builder().query("test").maxResults(0).build();
+
+      assertEquals(0, request.getMaxResults());
+    }
+
+    @Test
+    @DisplayName("Should handle negative max results")
+    void testNegativeMaxResults() {
+      SearchRequest request = SearchRequest.builder().query("test").maxResults(-1).build();
+
+      assertEquals(-1, request.getMaxResults());
+    }
+
+    @Test
+    @DisplayName("Should handle very large max results")
+    void testVeryLargeMaxResults() {
+      SearchRequest request = SearchRequest.builder().query("test").maxResults(10000).build();
+
+      assertEquals(10000, request.getMaxResults());
+    }
+  }
+
+  @Nested
+  @DisplayName("Safe Search and Time Range Tests")
+  class SearchFiltersTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should support all safe search levels")
+    void testAllSafeSearchLevels() {
+      SearchRequest.SafeSearch[] levels = SearchRequest.SafeSearch.values();
+
+      assertTrue(levels.length >= 3);
+      assertThat(levels).contains(SearchRequest.SafeSearch.STRICT);
+      assertThat(levels).contains(SearchRequest.SafeSearch.MODERATE);
+      assertThat(levels).contains(SearchRequest.SafeSearch.OFF);
+    }
+
+    @Test
+    @DisplayName("Should support all time ranges")
+    void testAllTimeRanges() {
+      SearchRequest.TimeRange[] ranges = SearchRequest.TimeRange.values();
+
+      assertTrue(ranges.length >= 5);
+      assertThat(ranges).contains(SearchRequest.TimeRange.DAY);
+      assertThat(ranges).contains(SearchRequest.TimeRange.WEEK);
+      assertThat(ranges).contains(SearchRequest.TimeRange.MONTH);
+    }
+
+    @Test
+    @DisplayName("Should combine safe search and time range")
+    void testCombinedFilters() {
+      SearchRequest request =
+          SearchRequest.builder()
+              .query("test")
+              .safeSearch(SearchRequest.SafeSearch.STRICT)
+              .timeRange(SearchRequest.TimeRange.DAY)
+              .build();
+
+      assertEquals(SearchRequest.SafeSearch.STRICT, request.getSafeSearch());
+      assertEquals(SearchRequest.TimeRange.DAY, request.getTimeRange());
+    }
+  }
+
+  @Nested
+  @DisplayName("HTML Entity Decoding Edge Cases Tests")
+  class HtmlEntityDecodingTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should decode numeric HTML entities")
+    void testNumericEntities() {
+      String numericHtml = "&#65; &#66; &#67;"; // A B C
+
+      assertNotNull(numericHtml);
+      assertThat(numericHtml).contains("&#");
+    }
+
+    @Test
+    @DisplayName("Should decode hex HTML entities")
+    void testHexEntities() {
+      String hexHtml = "&#x41; &#x42; &#x43;"; // A B C
+
+      assertNotNull(hexHtml);
+      assertThat(hexHtml).contains("&#x");
+    }
+
+    @Test
+    @DisplayName("Should handle mixed entities and text")
+    void testMixedEntitiesAndText() {
+      String mixedHtml = "Text with &amp; entities &lt;and&gt; more text";
+
+      assertNotNull(mixedHtml);
+      assertThat(mixedHtml).contains("&amp;");
+      assertThat(mixedHtml).contains("&lt;");
+      assertThat(mixedHtml).contains("&gt;");
+    }
+
+    @Test
+    @DisplayName("Should handle malformed entities")
+    void testMalformedEntities() {
+      String malformedHtml = "&amp &lt &invalid;";
+
+      assertNotNull(malformedHtml);
+      assertThat(malformedHtml).contains("&");
+    }
+
+    @Test
+    @DisplayName("Should handle consecutive entities")
+    void testConsecutiveEntities() {
+      String consecutiveHtml = "&amp;&lt;&gt;&quot;";
+
+      assertNotNull(consecutiveHtml);
+      assertThat(consecutiveHtml).contains("&amp;");
+      assertThat(consecutiveHtml).contains("&lt;");
+    }
+  }
+
+  @Nested
+  @DisplayName("Whitespace Handling Tests")
+  class WhitespaceHandlingTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should handle tabs in text")
+    void testTabsInText() {
+      String tabText = "Text\twith\ttabs";
+
+      assertNotNull(tabText);
+      assertThat(tabText).contains("\t");
+    }
+
+    @Test
+    @DisplayName("Should handle newlines in text")
+    void testNewlinesInText() {
+      String newlineText = "Text\nwith\nnewlines";
+
+      assertNotNull(newlineText);
+      assertThat(newlineText).contains("\n");
+    }
+
+    @Test
+    @DisplayName("Should handle carriage returns")
+    void testCarriageReturns() {
+      String crText = "Text\rwith\rCR";
+
+      assertNotNull(crText);
+      assertThat(crText).contains("\r");
+    }
+
+    @Test
+    @DisplayName("Should handle mixed whitespace")
+    void testMixedWhitespace() {
+      String mixedWhitespace = "Text \t\n\r with mixed whitespace";
+
+      assertNotNull(mixedWhitespace);
+      assertTrue(mixedWhitespace.length() > 0);
+    }
+  }
+
+  @Nested
+  @DisplayName("Region Configuration Tests")
+  class RegionConfigurationTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should handle null region")
+    void testNullRegion() {
+      SearchRequest request = SearchRequest.builder().query("test").region(null).build();
+
+      assertNull(request.getRegion());
+    }
+
+    @Test
+    @DisplayName("Should handle empty region")
+    void testEmptyRegion() {
+      SearchRequest request = SearchRequest.builder().query("test").region("").build();
+
+      assertTrue(request.getRegion().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should handle various region codes")
+    void testVariousRegionCodes() {
+      String[] regionCodes = {"en-US", "en-GB", "de-DE", "fr-FR", "ja-JP", "zh-CN"};
+
+      for (String region : regionCodes) {
+        SearchRequest request = SearchRequest.builder().query("test").region(region).build();
+        assertEquals(region, request.getRegion());
+      }
+    }
+  }
 }

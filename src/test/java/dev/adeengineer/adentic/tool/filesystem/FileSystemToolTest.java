@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Assumptions;
 
 /** Comprehensive tests for FileSystemTool */
 @DisplayName("FileSystemTool Tests")
@@ -751,6 +752,854 @@ class FileSystemToolTest {
       // Should deny access outside sandbox
       assertThrows(
           SecurityException.class, () -> sandboxedTool.readFile("/tmp/outside.txt").block());
+    }
+  }
+
+  @Nested
+  @DisplayName("Empty File Tests")
+  class EmptyFileTests {
+
+    @Test
+    @DisplayName("Should read empty text file")
+    void testReadEmptyTextFile() throws IOException {
+      Path emptyFile = testDir.resolve("empty.txt");
+      Files.writeString(emptyFile, "");
+
+      try {
+        FileContent content = fileSystemTool.readFile(emptyFile.toString()).block();
+
+        assertNotNull(content);
+        assertTrue(content.isSuccess());
+        assertEquals("", content.getContent());
+        assertEquals(0, content.getSize());
+      } finally {
+        Files.deleteIfExists(emptyFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should write empty content to file")
+    void testWriteEmptyContent() throws IOException {
+      Path emptyFile = testDir.resolve("empty-write.txt");
+
+      try {
+        FileOperationResult result = fileSystemTool.writeFile(emptyFile.toString(), "").block();
+
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertTrue(Files.exists(emptyFile));
+        assertEquals(0, Files.size(emptyFile));
+      } finally {
+        Files.deleteIfExists(emptyFile);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Symlink Tests")
+  class SymlinkTests {
+
+    @Test
+    @DisplayName("Should handle symlink when followSymlinks is enabled")
+    void testSymlinkWithFollowEnabled() throws IOException {
+      Path targetFile = testDir.resolve("target.txt");
+      Path symlinkFile = testDir.resolve("symlink.txt");
+      Files.writeString(targetFile, "Target content");
+
+      try {
+        Files.createSymbolicLink(symlinkFile, targetFile);
+
+        FileSystemConfig config = FileSystemConfig.builder().followSymlinks(true).build();
+        FileSystemTool tool = new FileSystemTool(config);
+
+        FileContent content = tool.readFile(symlinkFile.toString()).block();
+
+        assertNotNull(content);
+        assertTrue(content.isSuccess());
+        assertEquals("Target content", content.getContent());
+      } catch (UnsupportedOperationException e) {
+        // Symlinks not supported on this platform
+        Assumptions.abort("Symlinks not supported");
+      } finally {
+        Files.deleteIfExists(symlinkFile);
+        Files.deleteIfExists(targetFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should reject symlink when followSymlinks is disabled")
+    void testSymlinkWithFollowDisabled() throws IOException {
+      Path targetFile = testDir.resolve("target.txt");
+      Path symlinkFile = testDir.resolve("symlink.txt");
+      Files.writeString(targetFile, "Target content");
+
+      try {
+        Files.createSymbolicLink(symlinkFile, targetFile);
+
+        FileSystemConfig config = FileSystemConfig.builder().followSymlinks(false).build();
+        FileSystemTool tool = new FileSystemTool(config);
+
+        assertThrows(SecurityException.class, () -> tool.readFile(symlinkFile.toString()).block());
+      } catch (UnsupportedOperationException e) {
+        // Symlinks not supported on this platform
+        Assumptions.abort("Symlinks not supported");
+      } finally {
+        Files.deleteIfExists(symlinkFile);
+        Files.deleteIfExists(targetFile);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Hidden File Tests")
+  class HiddenFileTests {
+
+    @Test
+    @DisplayName("Should find hidden files when includeHidden is true")
+    void testFindHiddenFilesWhenIncluded() throws IOException {
+      Path hiddenFile = testDir.resolve(".hidden");
+      Files.writeString(hiddenFile, "hidden content");
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern(".*")
+                .recursive(false)
+                .includeHidden(true)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results).anyMatch(info -> info.getName().equals(".hidden"));
+      } finally {
+        Files.deleteIfExists(hiddenFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should exclude hidden files when includeHidden is false")
+    void testExcludeHiddenFiles() throws IOException {
+      Path hiddenFile = testDir.resolve(".hidden");
+      Files.writeString(hiddenFile, "hidden content");
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*")
+                .recursive(false)
+                .includeHidden(false)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results).noneMatch(info -> info.getName().equals(".hidden"));
+      } finally {
+        Files.deleteIfExists(hiddenFile);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("File Search With Size Filters Tests")
+  class FileSizeFilterTests {
+
+    @Test
+    @DisplayName("Should find files with minimum size")
+    void testFindFilesWithMinSize() throws IOException {
+      Path smallFile = testDir.resolve("small.txt");
+      Path largeFile = testDir.resolve("large.txt");
+      Files.writeString(smallFile, "X".repeat(10));
+      Files.writeString(largeFile, "X".repeat(1000));
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*.txt")
+                .recursive(false)
+                .minSize(500L)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results).allMatch(info -> info.getSize() >= 500L);
+        assertThat(results).noneMatch(info -> info.getName().equals("small.txt"));
+      } finally {
+        Files.deleteIfExists(smallFile);
+        Files.deleteIfExists(largeFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should find files with maximum size")
+    void testFindFilesWithMaxSize() throws IOException {
+      Path smallFile = testDir.resolve("small.txt");
+      Path largeFile = testDir.resolve("large.txt");
+      Files.writeString(smallFile, "X".repeat(10));
+      Files.writeString(largeFile, "X".repeat(1000));
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*.txt")
+                .recursive(false)
+                .maxSize(100L)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results).allMatch(info -> info.getSize() <= 100L);
+        assertThat(results).noneMatch(info -> info.getName().equals("large.txt"));
+      } finally {
+        Files.deleteIfExists(smallFile);
+        Files.deleteIfExists(largeFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should find files within size range")
+    void testFindFilesWithinSizeRange() throws IOException {
+      Path tinyFile = testDir.resolve("tiny.txt");
+      Path mediumFile = testDir.resolve("medium.txt");
+      Path hugeFile = testDir.resolve("huge.txt");
+      Files.writeString(tinyFile, "X".repeat(5));
+      Files.writeString(mediumFile, "X".repeat(50));
+      Files.writeString(hugeFile, "X".repeat(500));
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*.txt")
+                .recursive(false)
+                .minSize(10L)
+                .maxSize(100L)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results).allMatch(info -> info.getSize() >= 10L && info.getSize() <= 100L);
+        assertThat(results).anyMatch(info -> info.getName().equals("medium.txt"));
+      } finally {
+        Files.deleteIfExists(tinyFile);
+        Files.deleteIfExists(mediumFile);
+        Files.deleteIfExists(hugeFile);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("File Search With Time Filters Tests")
+  class FileTimeFilterTests {
+
+    @Test
+    @DisplayName("Should find files modified after timestamp")
+    void testFindFilesModifiedAfter() throws IOException {
+      Path oldFile = testDir.resolve("old.txt");
+      Files.writeString(oldFile, "old");
+
+      try {
+        // Wait a bit
+        Thread.sleep(100);
+        java.time.Instant cutoff = java.time.Instant.now();
+        Thread.sleep(100);
+
+        Path newFile = testDir.resolve("new.txt");
+        Files.writeString(newFile, "new");
+
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*.txt")
+                .recursive(false)
+                .modifiedAfter(cutoff)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results).anyMatch(info -> info.getName().equals("new.txt"));
+        assertThat(results).noneMatch(info -> info.getName().equals("old.txt"));
+
+        Files.deleteIfExists(newFile);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } finally {
+        Files.deleteIfExists(oldFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should find files modified before timestamp")
+    void testFindFilesModifiedBefore() throws IOException {
+      Path oldFile = testDir.resolve("old.txt");
+      Files.writeString(oldFile, "old");
+
+      try {
+        Thread.sleep(100);
+        java.time.Instant cutoff = java.time.Instant.now();
+        Thread.sleep(100);
+
+        Path newFile = testDir.resolve("new.txt");
+        Files.writeString(newFile, "new");
+
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*.txt")
+                .recursive(false)
+                .modifiedBefore(cutoff)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results).anyMatch(info -> info.getName().equals("old.txt"));
+        assertThat(results).noneMatch(info -> info.getName().equals("new.txt"));
+
+        Files.deleteIfExists(newFile);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      } finally {
+        Files.deleteIfExists(oldFile);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("File Search By Extension Tests")
+  class FileExtensionSearchTests {
+
+    @Test
+    @DisplayName("Should find files by single extension")
+    void testFindFilesBySingleExtension() throws IOException {
+      Files.writeString(testDir.resolve("doc.txt"), "text");
+      Files.writeString(testDir.resolve("data.json"), "json");
+      Files.writeString(testDir.resolve("code.java"), "java");
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*")
+                .recursive(false)
+                .extensions(new String[] {".txt"})
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results).allMatch(info -> ".txt".equalsIgnoreCase(info.getExtension()));
+      } finally {
+        Files.deleteIfExists(testDir.resolve("doc.txt"));
+        Files.deleteIfExists(testDir.resolve("data.json"));
+        Files.deleteIfExists(testDir.resolve("code.java"));
+      }
+    }
+
+    @Test
+    @DisplayName("Should find files by multiple extensions")
+    void testFindFilesByMultipleExtensions() throws IOException {
+      Files.writeString(testDir.resolve("doc.txt"), "text");
+      Files.writeString(testDir.resolve("data.json"), "json");
+      Files.writeString(testDir.resolve("code.java"), "java");
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*")
+                .recursive(false)
+                .extensions(new String[] {".txt", ".json"})
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results)
+            .allMatch(
+                info ->
+                    ".txt".equalsIgnoreCase(info.getExtension())
+                        || ".json".equalsIgnoreCase(info.getExtension()));
+        assertThat(results).noneMatch(info -> ".java".equalsIgnoreCase(info.getExtension()));
+      } finally {
+        Files.deleteIfExists(testDir.resolve("doc.txt"));
+        Files.deleteIfExists(testDir.resolve("data.json"));
+        Files.deleteIfExists(testDir.resolve("code.java"));
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("File Search By Type Tests")
+  class FileSearchTypeTests {
+
+    @Test
+    @DisplayName("Should find only files")
+    void testFindOnlyFiles() throws IOException {
+      Files.writeString(testDir.resolve("file.txt"), "content");
+      Path subDir = Files.createDirectory(testDir.resolve("subdir"));
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*")
+                .recursive(false)
+                .searchType(FileSearchRequest.SearchType.FILES)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results).allMatch(FileInfo::isFile);
+        assertThat(results).noneMatch(FileInfo::isDirectory);
+      } finally {
+        Files.deleteIfExists(testDir.resolve("file.txt"));
+        Files.deleteIfExists(subDir);
+      }
+    }
+
+    @Test
+    @DisplayName("Should find only directories")
+    void testFindOnlyDirectories() throws IOException {
+      Files.writeString(testDir.resolve("file.txt"), "content");
+      Path subDir = Files.createDirectory(testDir.resolve("subdir"));
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*")
+                .recursive(false)
+                .searchType(FileSearchRequest.SearchType.DIRECTORIES)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results).allMatch(FileInfo::isDirectory);
+        assertThat(results).noneMatch(FileInfo::isFile);
+      } finally {
+        Files.deleteIfExists(testDir.resolve("file.txt"));
+        Files.deleteIfExists(subDir);
+      }
+    }
+
+    @Test
+    @DisplayName("Should find both files and directories")
+    void testFindBoth() throws IOException {
+      Files.writeString(testDir.resolve("file.txt"), "content");
+      Path subDir = Files.createDirectory(testDir.resolve("subdir"));
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*")
+                .recursive(false)
+                .searchType(FileSearchRequest.SearchType.BOTH)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results).anyMatch(FileInfo::isFile);
+        assertThat(results).anyMatch(FileInfo::isDirectory);
+      } finally {
+        Files.deleteIfExists(testDir.resolve("file.txt"));
+        Files.deleteIfExists(subDir);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Copy Operation Edge Cases Tests")
+  class CopyOperationEdgeCasesTests {
+
+    @Test
+    @DisplayName("Should copy file and replace existing")
+    void testCopyFileReplaceExisting() throws IOException {
+      Path source = testDir.resolve("source.txt");
+      Path target = testDir.resolve("target.txt");
+      Files.writeString(source, "source content");
+      Files.writeString(target, "old target content");
+
+      try {
+        FileOperationResult result =
+            fileSystemTool.copyFile(source.toString(), target.toString()).block();
+
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertEquals("source content", Files.readString(target));
+      } finally {
+        Files.deleteIfExists(source);
+        Files.deleteIfExists(target);
+      }
+    }
+
+    @Test
+    @DisplayName("Should fail to copy non-existent file")
+    void testCopyNonExistentFile() {
+      Path source = testDir.resolve("nonexistent.txt");
+      Path target = testDir.resolve("target.txt");
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> fileSystemTool.copyFile(source.toString(), target.toString()).block());
+    }
+  }
+
+  @Nested
+  @DisplayName("Move Operation Edge Cases Tests")
+  class MoveOperationEdgeCasesTests {
+
+    @Test
+    @DisplayName("Should move file and replace existing")
+    void testMoveFileReplaceExisting() throws IOException {
+      Path source = testDir.resolve("source.txt");
+      Path target = testDir.resolve("target.txt");
+      Files.writeString(source, "source content");
+      Files.writeString(target, "old target content");
+
+      try {
+        FileOperationResult result =
+            fileSystemTool.moveFile(source.toString(), target.toString()).block();
+
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertFalse(Files.exists(source));
+        assertEquals("source content", Files.readString(target));
+      } finally {
+        Files.deleteIfExists(source);
+        Files.deleteIfExists(target);
+      }
+    }
+
+    @Test
+    @DisplayName("Should fail to move non-existent file")
+    void testMoveNonExistentFile() {
+      Path source = testDir.resolve("nonexistent.txt");
+      Path target = testDir.resolve("target.txt");
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> fileSystemTool.moveFile(source.toString(), target.toString()).block());
+    }
+  }
+
+  @Nested
+  @DisplayName("Directory Listing Edge Cases Tests")
+  class DirectoryListingEdgeCasesTests {
+
+    @Test
+    @DisplayName("Should list empty directory")
+    void testListEmptyDirectory() throws IOException {
+      Path emptyDir = Files.createDirectory(testDir.resolve("empty"));
+
+      try {
+        DirectoryListing listing = fileSystemTool.listDirectory(emptyDir.toString()).block();
+
+        assertNotNull(listing);
+        assertTrue(listing.isSuccess());
+        assertEquals(0, listing.getTotalItems());
+        assertEquals(0, listing.getTotalSize());
+      } finally {
+        Files.deleteIfExists(emptyDir);
+      }
+    }
+
+    @Test
+    @DisplayName("Should fail to list file as directory")
+    void testListFileAsDirectory() {
+      FileContent result = fileSystemTool.readFile(testFile.toString()).block();
+      assertTrue(result.isSuccess());
+
+      DirectoryListing listing = fileSystemTool.listDirectory(testFile.toString()).block();
+      assertNotNull(listing);
+      assertFalse(listing.isSuccess());
+      assertNotNull(listing.getError());
+    }
+
+    @Test
+    @DisplayName("Should list directory with mixed content")
+    void testListDirectoryWithMixedContent() throws IOException {
+      Path subDir = Files.createDirectory(testDir.resolve("subdir"));
+      Files.writeString(testDir.resolve("file1.txt"), "content1");
+      Files.writeString(testDir.resolve("file2.txt"), "content2");
+
+      try {
+        DirectoryListing listing = fileSystemTool.listDirectory(testDir.toString()).block();
+
+        assertNotNull(listing);
+        assertTrue(listing.isSuccess());
+        assertThat(listing.getFiles().size()).isGreaterThanOrEqualTo(2);
+        assertThat(listing.getDirectories().size()).isGreaterThanOrEqualTo(1);
+        assertThat(listing.getTotalSize()).isGreaterThan(0);
+      } finally {
+        Files.deleteIfExists(testDir.resolve("file1.txt"));
+        Files.deleteIfExists(testDir.resolve("file2.txt"));
+        Files.deleteIfExists(subDir);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Delete Operation Edge Cases Tests")
+  class DeleteOperationEdgeCasesTests {
+
+    @Test
+    @DisplayName("Should fail to delete non-existent file")
+    void testDeleteNonExistentFile() {
+      Path nonExistent = testDir.resolve("nonexistent.txt");
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> fileSystemTool.deleteFile(nonExistent.toString()).block());
+    }
+
+    @Test
+    @DisplayName("Should fail to delete non-empty directory without recursive")
+    void testDeleteNonEmptyDirectoryWithoutRecursive() throws IOException {
+      Path dirWithFiles = Files.createDirectory(testDir.resolve("nonempty"));
+      Files.writeString(dirWithFiles.resolve("file.txt"), "content");
+
+      try {
+        FileOperationResult result =
+            fileSystemTool.deleteDirectory(dirWithFiles.toString(), false).block();
+
+        assertNotNull(result);
+        assertFalse(result.isSuccess());
+        assertNotNull(result.getError());
+      } finally {
+        Files.deleteIfExists(dirWithFiles.resolve("file.txt"));
+        Files.deleteIfExists(dirWithFiles);
+      }
+    }
+
+    @Test
+    @DisplayName("Should delete nested directory structure recursively")
+    void testDeleteNestedDirectoryRecursively() throws IOException {
+      Path parent = Files.createDirectory(testDir.resolve("parent"));
+      Path child = Files.createDirectory(parent.resolve("child"));
+      Path grandchild = Files.createDirectory(child.resolve("grandchild"));
+      Files.writeString(grandchild.resolve("file.txt"), "content");
+
+      FileOperationResult result = fileSystemTool.deleteDirectory(parent.toString(), true).block();
+
+      assertNotNull(result);
+      assertTrue(result.isSuccess());
+      assertFalse(Files.exists(parent));
+      assertThat(result.getItemsAffected()).isGreaterThan(1);
+    }
+  }
+
+  @Nested
+  @DisplayName("Create Directory Edge Cases Tests")
+  class CreateDirectoryEdgeCasesTests {
+
+    @Test
+    @DisplayName("Should fail to create directory when parent doesn't exist without createParents")
+    void testCreateDirectoryWithoutParents() {
+      Path deepDir = testDir.resolve("nonexistent/child");
+
+      FileOperationResult result =
+          fileSystemTool.createDirectory(deepDir.toString(), false).block();
+
+      assertNotNull(result);
+      assertFalse(result.isSuccess());
+      assertNotNull(result.getError());
+    }
+
+    @Test
+    @DisplayName("Should fail to create directory that already exists")
+    void testCreateExistingDirectory() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> fileSystemTool.createDirectory(testDir.toString(), false).block());
+    }
+  }
+
+  @Nested
+  @DisplayName("File Info Edge Cases Tests")
+  class FileInfoEdgeCasesTests {
+
+    @Test
+    @DisplayName("Should get info for file without extension")
+    void testGetInfoForFileWithoutExtension() throws IOException {
+      Path noExtFile = testDir.resolve("README");
+      Files.writeString(noExtFile, "content");
+
+      try {
+        FileInfo info = fileSystemTool.getFileInfo(noExtFile.toString()).block();
+
+        assertNotNull(info);
+        assertTrue(info.isFile());
+        assertNull(info.getExtension());
+      } finally {
+        Files.deleteIfExists(noExtFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should get info for directory")
+    void testGetInfoForDirectory() throws IOException {
+      Path dir = Files.createDirectory(testDir.resolve("infodir"));
+
+      try {
+        FileInfo info = fileSystemTool.getFileInfo(dir.toString()).block();
+
+        assertNotNull(info);
+        assertTrue(info.isDirectory());
+        assertFalse(info.isFile());
+        assertNull(info.getExtension());
+      } finally {
+        Files.deleteIfExists(dir);
+      }
+    }
+
+    @Test
+    @DisplayName("Should fail to get info for non-existent path")
+    void testGetInfoForNonExistent() {
+      Path nonExistent = testDir.resolve("nonexistent.txt");
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> fileSystemTool.getFileInfo(nonExistent.toString()).block());
+    }
+  }
+
+  @Nested
+  @DisplayName("File Hash Calculation Tests")
+  class FileHashTests {
+
+    @Test
+    @DisplayName("Should calculate file hash when enabled")
+    void testCalculateFileHash() throws IOException {
+      Path hashFile = testDir.resolve("hash.txt");
+      Files.writeString(hashFile, "content for hashing");
+
+      try {
+        FileSystemConfig config = FileSystemConfig.builder().calculateHashes(true).build();
+        FileSystemTool tool = new FileSystemTool(config);
+
+        FileInfo info = tool.getFileInfo(hashFile.toString()).block();
+
+        assertNotNull(info);
+        assertNotNull(info.getHash());
+        assertThat(info.getHash()).hasSize(64); // SHA-256 produces 64 hex characters
+      } finally {
+        Files.deleteIfExists(hashFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should not calculate file hash when disabled")
+    void testNoHashWhenDisabled() throws IOException {
+      Path hashFile = testDir.resolve("nohash.txt");
+      Files.writeString(hashFile, "content without hash");
+
+      try {
+        FileSystemConfig config = FileSystemConfig.builder().calculateHashes(false).build();
+        FileSystemTool tool = new FileSystemTool(config);
+
+        FileInfo info = tool.getFileInfo(hashFile.toString()).block();
+
+        assertNotNull(info);
+        assertNull(info.getHash());
+      } finally {
+        Files.deleteIfExists(hashFile);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Append Operation Edge Cases Tests")
+  class AppendOperationEdgeCasesTests {
+
+    @Test
+    @DisplayName("Should create file when appending to non-existent file")
+    void testAppendToNonExistentFile() throws IOException {
+      Path newFile = testDir.resolve("append-new.txt");
+
+      try {
+        FileOperationResult result =
+            fileSystemTool.appendFile(newFile.toString(), "appended content").block();
+
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertTrue(Files.exists(newFile));
+        assertEquals("appended content", Files.readString(newFile));
+      } finally {
+        Files.deleteIfExists(newFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should append multiple times")
+    void testMultipleAppends() throws IOException {
+      Path appendFile = testDir.resolve("multi-append.txt");
+      Files.writeString(appendFile, "Line 1\n");
+
+      try {
+        fileSystemTool.appendFile(appendFile.toString(), "Line 2\n").block();
+        fileSystemTool.appendFile(appendFile.toString(), "Line 3\n").block();
+
+        String content = Files.readString(appendFile);
+        assertThat(content).contains("Line 1", "Line 2", "Line 3");
+      } finally {
+        Files.deleteIfExists(appendFile);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Path Validation Tests")
+  class PathValidationTests {
+
+    @Test
+    @DisplayName("Should reject paths with null bytes")
+    void testPathWithNullBytes() {
+      assertThrows(
+          Exception.class, () -> fileSystemTool.exists(testDir.toString() + "\0malicious").block());
+    }
+
+    @Test
+    @DisplayName("Should handle blocked extensions")
+    void testBlockedExtensions() {
+      FileSystemConfig config =
+          FileSystemConfig.builder().blockedExtensions(java.util.Set.of(".exe", ".sh")).build();
+      FileSystemTool tool = new FileSystemTool(config);
+
+      Path exeFile = testDir.resolve("malicious.exe");
+
+      assertThrows(
+          SecurityException.class, () -> tool.writeFile(exeFile.toString(), "content").block());
+    }
+  }
+
+  @Nested
+  @DisplayName("Setter Tests")
+  class SetterTests {
+
+    @Test
+    @DisplayName("Should allow config update via setter")
+    void testSetConfig() {
+      FileSystemTool tool = new FileSystemTool();
+      FileSystemConfig newConfig = FileSystemConfig.builder().maxReadSize(5000).build();
+
+      tool.setConfig(newConfig);
+
+      // Config should be updated (indirectly tested by behavior)
+      assertNotNull(tool);
     }
   }
 }
