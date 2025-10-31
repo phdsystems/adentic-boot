@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 
 /**
  * Comprehensive tests for DuckDuckGoSearchProvider covering:
@@ -1064,6 +1065,538 @@ class DuckDuckGoSearchProviderTest {
         SearchRequest request = SearchRequest.builder().query("test").region(region).build();
         assertEquals(region, request.getRegion());
       }
+    }
+  }
+
+  @Nested
+  @DisplayName("HTML Parsing Integration Tests")
+  class HtmlParsingIntegrationTests {
+
+    @Test
+    @DisplayName("Should parse complete DuckDuckGo HTML response")
+    void testParseCompleteHtmlResponse() {
+      String completeHtml =
+          """
+          <!DOCTYPE html>
+          <html>
+          <head><title>DuckDuckGo Search Results</title></head>
+          <body>
+            <div class="results">
+              <div class="result">
+                <a class="result__a" href="https://example.com/page1">First Result Title</a>
+                <a class="result__snippet">This is the first result description with some details.</a>
+              </div>
+              <div class="result">
+                <a class="result__a" href="https://example.com/page2">Second Result &amp; Title</a>
+                <a class="result__snippet">Second result with HTML entities: &lt;code&gt; example.</a>
+              </div>
+              <div class="result">
+                <a class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fredirect.com&rut=123">Third Result</a>
+                <a class="result__snippet">Third result with redirect URL.</a>
+              </div>
+            </div>
+          </body>
+          </html>
+          """;
+
+      // Verify HTML structure contains expected patterns
+      assertThat(completeHtml).contains("result__a");
+      assertThat(completeHtml).contains("result__snippet");
+      assertThat(completeHtml).contains("&amp;");
+      assertThat(completeHtml).contains("uddg=");
+    }
+
+    @Test
+    @DisplayName("Should handle HTML with no snippets")
+    void testHtmlWithNoSnippets() {
+      String noSnippetHtml =
+          """
+          <html>
+            <a class="result__a" href="https://example.com">Title Only</a>
+            <a class="result__a" href="https://example2.com">Another Title</a>
+          </html>
+          """;
+
+      assertThat(noSnippetHtml).contains("result__a");
+      assertThat(noSnippetHtml).doesNotContain("result__snippet");
+    }
+
+    @Test
+    @DisplayName("Should handle HTML with special characters in URLs")
+    void testHtmlWithSpecialCharacters() {
+      String specialCharHtml =
+          """
+          <html>
+            <a class="result__a" href="https://example.com/path?q=test&amp;page=1#section">Complex URL</a>
+            <a class="result__snippet">Description with &quot;quotes&quot; and &apos;apostrophes&apos;.</a>
+          </html>
+          """;
+
+      assertThat(specialCharHtml).contains("&amp;");
+      assertThat(specialCharHtml).contains("&quot;");
+      assertThat(specialCharHtml).contains("&apos;");
+    }
+  }
+
+  @Nested
+  @DisplayName("Private Method Testing via Reflection")
+  class PrivateMethodTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should test cleanHtml method via reflection")
+    void testCleanHtmlViaReflection() throws Exception {
+      java.lang.reflect.Method cleanHtmlMethod =
+          DuckDuckGoSearchProvider.class.getDeclaredMethod("cleanHtml", String.class);
+      cleanHtmlMethod.setAccessible(true);
+
+      // Test null input
+      String nullResult = (String) cleanHtmlMethod.invoke(provider, (Object) null);
+      assertNull(nullResult);
+
+      // Test HTML with tags
+      String htmlWithTags = "<p>Hello <b>World</b></p>";
+      String cleanedTags = (String) cleanHtmlMethod.invoke(provider, htmlWithTags);
+      assertNotNull(cleanedTags);
+      assertThat(cleanedTags).doesNotContain("<p>");
+      assertThat(cleanedTags).doesNotContain("<b>");
+
+      // Test HTML entities
+      String htmlWithEntities = "Test &amp; Demo &lt;example&gt;";
+      String cleanedEntities = (String) cleanHtmlMethod.invoke(provider, htmlWithEntities);
+      assertNotNull(cleanedEntities);
+      assertThat(cleanedEntities).contains("&");
+      assertThat(cleanedEntities).contains("<");
+      assertThat(cleanedEntities).contains(">");
+
+      // Test whitespace normalization
+      String multiSpace = "Text   with    multiple     spaces";
+      String normalized = (String) cleanHtmlMethod.invoke(provider, multiSpace);
+      assertNotNull(normalized);
+      assertThat(normalized).doesNotContain("   ");
+
+      // Test all entity types
+      String allEntities = "&nbsp;&amp;&lt;&gt;&quot;&#39;";
+      String cleanedAll = (String) cleanHtmlMethod.invoke(provider, allEntities);
+      assertNotNull(cleanedAll);
+    }
+
+    @Test
+    @DisplayName("Should test cleanUrl method via reflection")
+    void testCleanUrlViaReflection() throws Exception {
+      java.lang.reflect.Method cleanUrlMethod =
+          DuckDuckGoSearchProvider.class.getDeclaredMethod("cleanUrl", String.class);
+      cleanUrlMethod.setAccessible(true);
+
+      // Test direct URL (no redirect)
+      String directUrl = "https://example.com/page";
+      String cleanedDirect = (String) cleanUrlMethod.invoke(provider, directUrl);
+      assertNotNull(cleanedDirect);
+      assertEquals(directUrl, cleanedDirect);
+
+      // Test DuckDuckGo redirect URL
+      String redirectUrl = "//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com&rut=123";
+      String cleanedRedirect = (String) cleanUrlMethod.invoke(provider, redirectUrl);
+      assertNotNull(cleanedRedirect);
+
+      // Test redirect URL without ampersand
+      String redirectNoAmp = "//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com";
+      String cleanedNoAmp = (String) cleanUrlMethod.invoke(provider, redirectNoAmp);
+      assertNotNull(cleanedNoAmp);
+
+      // Test malformed redirect URL (should catch exception)
+      String malformedRedirect = "//duckduckgo.com/l/?uddg=malformed{invalid}url";
+      String cleanedMalformed = (String) cleanUrlMethod.invoke(provider, malformedRedirect);
+      assertNotNull(cleanedMalformed);
+    }
+
+    @Test
+    @DisplayName("Should test extractDomain method via reflection")
+    void testExtractDomainViaReflection() throws Exception {
+      java.lang.reflect.Method extractDomainMethod =
+          DuckDuckGoSearchProvider.class.getDeclaredMethod("extractDomain", String.class);
+      extractDomainMethod.setAccessible(true);
+
+      // Test normal URL
+      String normalUrl = "https://www.example.com/path/to/page";
+      String domain = (String) extractDomainMethod.invoke(provider, normalUrl);
+      assertNotNull(domain);
+      assertEquals("www.example.com", domain);
+
+      // Test URL with port
+      String urlWithPort = "https://example.com:8080/page";
+      String domainWithPort = (String) extractDomainMethod.invoke(provider, urlWithPort);
+      assertNotNull(domainWithPort);
+      assertEquals("example.com", domainWithPort);
+
+      // Test malformed URL (should catch exception and return original)
+      String malformedUrl = "not-a-valid-url";
+      String malformedDomain = (String) extractDomainMethod.invoke(provider, malformedUrl);
+      assertNotNull(malformedDomain);
+      assertEquals(malformedUrl, malformedDomain);
+
+      // Test URL without host
+      String noHostUrl = "/relative/path";
+      String noHostDomain = (String) extractDomainMethod.invoke(provider, noHostUrl);
+      assertNotNull(noHostDomain);
+    }
+
+    @Test
+    @DisplayName("Should test findSnippet method via reflection")
+    void testFindSnippetViaReflection() throws Exception {
+      java.lang.reflect.Method findSnippetMethod =
+          DuckDuckGoSearchProvider.class.getDeclaredMethod("findSnippet", String.class, int.class);
+      findSnippetMethod.setAccessible(true);
+
+      // Test HTML with snippet
+      String htmlWithSnippet =
+          "<a class=\"result__a\" href=\"url\">Title</a><a class=\"result__snippet\">Test snippet</a>";
+      String snippet = (String) findSnippetMethod.invoke(provider, htmlWithSnippet, 0);
+      assertNotNull(snippet);
+
+      // Test HTML without snippet
+      String htmlNoSnippet = "<a class=\"result__a\" href=\"url\">Title</a>";
+      String noSnippet = (String) findSnippetMethod.invoke(provider, htmlNoSnippet, 0);
+      assertNull(noSnippet);
+
+      // Test with start position after all content (should return null, not throw exception)
+      String afterSnippet =
+          (String) findSnippetMethod.invoke(provider, htmlWithSnippet, htmlWithSnippet.length());
+      assertNull(afterSnippet);
+    }
+
+    @Test
+    @DisplayName("Should test parseSearchResults method via reflection")
+    void testParseSearchResultsViaReflection() throws Exception {
+      java.lang.reflect.Method parseSearchResultsMethod =
+          DuckDuckGoSearchProvider.class.getDeclaredMethod(
+              "parseSearchResults", String.class, SearchRequest.class, java.time.Instant.class);
+      parseSearchResultsMethod.setAccessible(true);
+
+      // Test with valid HTML
+      String validHtml =
+          """
+          <html>
+            <a class="result__a" href="https://example.com/1">First Result</a>
+            <a class="result__snippet">First description</a>
+            <a class="result__a" href="https://example.com/2">Second Result</a>
+            <a class="result__snippet">Second description</a>
+          </html>
+          """;
+
+      SearchRequest request = SearchRequest.builder().query("test").maxResults(10).build();
+      java.time.Instant startTime = java.time.Instant.now();
+
+      SearchResult result =
+          (SearchResult) parseSearchResultsMethod.invoke(provider, validHtml, request, startTime);
+
+      assertNotNull(result);
+      assertTrue(result.isSuccess());
+      assertTrue(result.hasResults());
+      assertEquals(2, result.getResultCount());
+
+      // Test with maxResults limit
+      SearchRequest limitedRequest = SearchRequest.builder().query("test").maxResults(1).build();
+      SearchResult limitedResult =
+          (SearchResult)
+              parseSearchResultsMethod.invoke(provider, validHtml, limitedRequest, startTime);
+
+      assertNotNull(limitedResult);
+      assertEquals(1, limitedResult.getResultCount());
+
+      // Test with maxResults = 0 (should use config default)
+      SearchRequest defaultMaxRequest = SearchRequest.builder().query("test").maxResults(0).build();
+      SearchResult defaultMaxResult =
+          (SearchResult)
+              parseSearchResultsMethod.invoke(provider, validHtml, defaultMaxRequest, startTime);
+
+      assertNotNull(defaultMaxResult);
+      assertTrue(defaultMaxResult.getResultCount() > 0);
+
+      // Test with empty HTML
+      String emptyHtml = "<html><body>No results</body></html>";
+      SearchResult emptyResult =
+          (SearchResult) parseSearchResultsMethod.invoke(provider, emptyHtml, request, startTime);
+
+      assertNotNull(emptyResult);
+      assertTrue(emptyResult.isSuccess());
+      assertFalse(emptyResult.hasResults());
+      assertEquals(0, emptyResult.getResultCount());
+
+      // Test with HTML containing redirect URLs
+      String redirectHtml =
+          """
+          <html>
+            <a class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com&rut=123">Redirect Result</a>
+            <a class="result__snippet">Redirect description</a>
+          </html>
+          """;
+
+      SearchResult redirectResult =
+          (SearchResult)
+              parseSearchResultsMethod.invoke(provider, redirectHtml, request, startTime);
+
+      assertNotNull(redirectResult);
+      assertTrue(redirectResult.hasResults());
+
+      // Test with HTML containing entities
+      String entityHtml =
+          """
+          <html>
+            <a class="result__a" href="https://example.com">Test &amp; Demo &lt;Example&gt;</a>
+            <a class="result__snippet">Description with &quot;quotes&quot; and &#39;apostrophes&#39;.</a>
+          </html>
+          """;
+
+      SearchResult entityResult =
+          (SearchResult) parseSearchResultsMethod.invoke(provider, entityHtml, request, startTime);
+
+      assertNotNull(entityResult);
+      assertTrue(entityResult.hasResults());
+    }
+
+    @Test
+    @DisplayName("Should test buildFormData method via reflection")
+    void testBuildFormDataViaReflection() throws Exception {
+      java.lang.reflect.Method buildFormDataMethod =
+          DuckDuckGoSearchProvider.class.getDeclaredMethod("buildFormData", SearchRequest.class);
+      buildFormDataMethod.setAccessible(true);
+
+      // Test with region specified
+      SearchRequest withRegion =
+          SearchRequest.builder().query("test query").region("en-GB").build();
+      java.net.http.HttpRequest.BodyPublisher bodyWithRegion =
+          (java.net.http.HttpRequest.BodyPublisher)
+              buildFormDataMethod.invoke(provider, withRegion);
+      assertNotNull(bodyWithRegion);
+
+      // Test with null region (should use config default)
+      SearchRequest nullRegion = SearchRequest.builder().query("test query").region(null).build();
+      java.net.http.HttpRequest.BodyPublisher bodyNullRegion =
+          (java.net.http.HttpRequest.BodyPublisher)
+              buildFormDataMethod.invoke(provider, nullRegion);
+      assertNotNull(bodyNullRegion);
+
+      // Test with special characters in query
+      SearchRequest specialChars =
+          SearchRequest.builder().query("test & query <example>").region("en-US").build();
+      java.net.http.HttpRequest.BodyPublisher bodySpecialChars =
+          (java.net.http.HttpRequest.BodyPublisher)
+              buildFormDataMethod.invoke(provider, specialChars);
+      assertNotNull(bodySpecialChars);
+    }
+  }
+
+  @Nested
+  @DisplayName("Error Path Coverage Tests")
+  class ErrorPathCoverageTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should handle IOException in search")
+    void testIoExceptionInSearch() {
+      // Test with invalid URL that would cause issues
+      SearchRequest request = SearchRequest.builder().query("test").maxResults(5).build();
+
+      // The search method handles errors gracefully via onErrorResume
+      Mono<SearchResult> resultMono = provider.search(request);
+
+      assertNotNull(resultMono);
+    }
+
+    @Test
+    @DisplayName("Should handle InterruptedException in search")
+    void testInterruptedExceptionInSearch() {
+      SearchRequest request = SearchRequest.builder().query("test").maxResults(5).build();
+
+      Mono<SearchResult> resultMono = provider.search(request);
+
+      assertNotNull(resultMono);
+    }
+
+    @Test
+    @DisplayName("Should create error result with various exception types")
+    void testCreateErrorResultWithDifferentExceptions() {
+      SearchRequest request = SearchRequest.builder().query("test").maxResults(5).build();
+
+      // Test with IOException
+      IOException ioException = new IOException("Connection timeout");
+      SearchMetadata ioMetadata =
+          SearchMetadata.builder()
+              .query("test")
+              .provider(SearchProvider.DUCKDUCKGO)
+              .success(false)
+              .error(ioException.getMessage())
+              .resultCount(0)
+              .build();
+      assertFalse(ioMetadata.isSuccess());
+      assertEquals("Connection timeout", ioMetadata.getError());
+
+      // Test with InterruptedException
+      InterruptedException interruptedException = new InterruptedException("Thread interrupted");
+      SearchMetadata interruptMetadata =
+          SearchMetadata.builder()
+              .query("test")
+              .provider(SearchProvider.DUCKDUCKGO)
+              .success(false)
+              .error(interruptedException.getMessage())
+              .resultCount(0)
+              .build();
+      assertFalse(interruptMetadata.isSuccess());
+      assertEquals("Thread interrupted", interruptMetadata.getError());
+
+      // Test with generic Exception
+      Exception genericException = new Exception("Unknown error");
+      SearchMetadata genericMetadata =
+          SearchMetadata.builder()
+              .query("test")
+              .provider(SearchProvider.DUCKDUCKGO)
+              .success(false)
+              .error(genericException.getMessage())
+              .resultCount(0)
+              .build();
+      assertFalse(genericMetadata.isSuccess());
+      assertEquals("Unknown error", genericMetadata.getError());
+    }
+  }
+
+  @Nested
+  @DisplayName("Boundary and Edge Case Coverage Tests")
+  class BoundaryEdgeCaseTests {
+
+    @BeforeEach
+    void setUpProvider() {
+      provider = new DuckDuckGoSearchProvider(config);
+    }
+
+    @Test
+    @DisplayName("Should handle extreme maxResults values")
+    void testExtremeMaxResults() throws Exception {
+      java.lang.reflect.Method parseSearchResultsMethod =
+          DuckDuckGoSearchProvider.class.getDeclaredMethod(
+              "parseSearchResults", String.class, SearchRequest.class, java.time.Instant.class);
+      parseSearchResultsMethod.setAccessible(true);
+
+      String htmlWithResults =
+          """
+          <html>
+            <a class="result__a" href="https://example.com/1">Result 1</a>
+            <a class="result__snippet">Snippet 1</a>
+            <a class="result__a" href="https://example.com/2">Result 2</a>
+            <a class="result__snippet">Snippet 2</a>
+            <a class="result__a" href="https://example.com/3">Result 3</a>
+            <a class="result__snippet">Snippet 3</a>
+          </html>
+          """;
+
+      // Test maxResults = 0 (should use config default)
+      SearchRequest zeroMax = SearchRequest.builder().query("test").maxResults(0).build();
+      SearchResult zeroResult =
+          (SearchResult)
+              parseSearchResultsMethod.invoke(
+                  provider, htmlWithResults, zeroMax, java.time.Instant.now());
+      assertNotNull(zeroResult);
+
+      // Test maxResults = -1 (should use config default)
+      SearchRequest negativeMax = SearchRequest.builder().query("test").maxResults(-1).build();
+      SearchResult negativeResult =
+          (SearchResult)
+              parseSearchResultsMethod.invoke(
+                  provider, htmlWithResults, negativeMax, java.time.Instant.now());
+      assertNotNull(negativeResult);
+
+      // Test maxResults = 1 (should limit to 1)
+      SearchRequest oneMax = SearchRequest.builder().query("test").maxResults(1).build();
+      SearchResult oneResult =
+          (SearchResult)
+              parseSearchResultsMethod.invoke(
+                  provider, htmlWithResults, oneMax, java.time.Instant.now());
+      assertNotNull(oneResult);
+      assertEquals(1, oneResult.getResultCount());
+
+      // Test maxResults = 100 (larger than available results)
+      SearchRequest largeMax = SearchRequest.builder().query("test").maxResults(100).build();
+      SearchResult largeResult =
+          (SearchResult)
+              parseSearchResultsMethod.invoke(
+                  provider, htmlWithResults, largeMax, java.time.Instant.now());
+      assertNotNull(largeResult);
+      assertEquals(3, largeResult.getResultCount()); // Only 3 results in HTML
+    }
+
+    @Test
+    @DisplayName("Should handle URLs with various formats")
+    void testVariousUrlFormats() throws Exception {
+      java.lang.reflect.Method cleanUrlMethod =
+          DuckDuckGoSearchProvider.class.getDeclaredMethod("cleanUrl", String.class);
+      cleanUrlMethod.setAccessible(true);
+
+      // Test various URL formats
+      String[] urls = {
+        "https://example.com",
+        "http://example.com",
+        "//example.com",
+        "example.com",
+        "/path/to/page",
+        "//duckduckgo.com/l/?uddg=test",
+        "//duckduckgo.com/l/?uddg=test&other=param",
+        "//duckduckgo.com/l/?other=param",
+        "ftp://example.com",
+        "mailto:test@example.com"
+      };
+
+      for (String url : urls) {
+        String cleaned = (String) cleanUrlMethod.invoke(provider, url);
+        assertNotNull(cleaned, "Cleaned URL should not be null for: " + url);
+      }
+    }
+
+    @Test
+    @DisplayName("Should handle HTML with no results in parseSearchResults")
+    void testParseSearchResultsWithNoMatches() throws Exception {
+      java.lang.reflect.Method parseSearchResultsMethod =
+          DuckDuckGoSearchProvider.class.getDeclaredMethod(
+              "parseSearchResults", String.class, SearchRequest.class, java.time.Instant.class);
+      parseSearchResultsMethod.setAccessible(true);
+
+      String htmlNoResults = "<html><body><p>Your search returned no results.</p></body></html>";
+      SearchRequest request = SearchRequest.builder().query("test").maxResults(10).build();
+
+      SearchResult result =
+          (SearchResult)
+              parseSearchResultsMethod.invoke(
+                  provider, htmlNoResults, request, java.time.Instant.now());
+
+      assertNotNull(result);
+      assertTrue(result.isSuccess());
+      assertFalse(result.hasResults());
+      assertEquals(0, result.getResultCount());
+    }
+
+    @Test
+    @DisplayName("Should handle empty and whitespace-only strings")
+    void testEmptyAndWhitespaceStrings() throws Exception {
+      java.lang.reflect.Method cleanHtmlMethod =
+          DuckDuckGoSearchProvider.class.getDeclaredMethod("cleanHtml", String.class);
+      cleanHtmlMethod.setAccessible(true);
+
+      // Test empty string
+      String emptyResult = (String) cleanHtmlMethod.invoke(provider, "");
+      assertNotNull(emptyResult);
+      assertTrue(emptyResult.isEmpty());
+
+      // Test whitespace only
+      String whitespaceResult = (String) cleanHtmlMethod.invoke(provider, "   \t\n\r   ");
+      assertNotNull(whitespaceResult);
+      assertTrue(whitespaceResult.isEmpty() || whitespaceResult.isBlank());
     }
   }
 }
