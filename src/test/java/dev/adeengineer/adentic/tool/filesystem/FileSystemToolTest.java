@@ -399,4 +399,358 @@ class FileSystemToolTest {
           SecurityException.class, () -> fileSystemTool.readFile("/root/protected.txt").block());
     }
   }
+
+  @Nested
+  @DisplayName("Large File Handling Tests")
+  class LargeFileTests {
+
+    @Test
+    @DisplayName("Should handle large file within size limit")
+    void testLargeFileWithinLimit() throws IOException {
+      Path largeFile = testDir.resolve("large.txt");
+      String content = "X".repeat(1024 * 100); // 100KB
+      Files.writeString(largeFile, content);
+
+      try {
+        FileContent result = fileSystemTool.readFile(largeFile.toString()).block();
+
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertEquals(content, result.getContent());
+      } finally {
+        Files.deleteIfExists(largeFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should reject files exceeding max size")
+    void testFileExceedingMaxSize() throws IOException {
+      // Create config with small max size
+      FileSystemConfig config = FileSystemConfig.builder().maxReadSize(100).build();
+      FileSystemTool tool = new FileSystemTool(config);
+
+      Path largeFile = testDir.resolve("toolarge.txt");
+      Files.writeString(largeFile, "X".repeat(200));
+
+      try {
+        assertThrows(SecurityException.class, () -> tool.readFile(largeFile.toString()).block());
+      } finally {
+        Files.deleteIfExists(largeFile);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Binary File Operations Tests")
+  class BinaryFileTests {
+
+    @Test
+    @DisplayName("Should handle binary file operations")
+    void testBinaryFileOperations() throws IOException {
+      Path binaryFile = testDir.resolve("binary.dat");
+      byte[] binaryData = new byte[] {0x00, 0x01, 0x02, (byte) 0xFF};
+      Files.write(binaryFile, binaryData);
+
+      try {
+        FileContent result = fileSystemTool.readFileBytes(binaryFile.toString()).block();
+
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertTrue(result.isBinary());
+        assertArrayEquals(binaryData, result.getBytes());
+      } finally {
+        Files.deleteIfExists(binaryFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should handle empty binary files")
+    void testEmptyBinaryFile() throws IOException {
+      Path emptyFile = testDir.resolve("empty.dat");
+      Files.write(emptyFile, new byte[0]);
+
+      try {
+        FileContent result = fileSystemTool.readFileBytes(emptyFile.toString()).block();
+
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertEquals(0, result.getBytes().length);
+      } finally {
+        Files.deleteIfExists(emptyFile);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Directory Traversal Tests")
+  class DirectoryTraversalTests {
+
+    @Test
+    @DisplayName("Should handle deep directory structures")
+    void testDeepDirectoryStructures() throws IOException {
+      Path deepDir = testDir;
+      for (int i = 0; i < 5; i++) {
+        deepDir = deepDir.resolve("level" + i);
+      }
+      Files.createDirectories(deepDir);
+
+      try {
+        assertTrue(Files.exists(deepDir));
+
+        FileInfo info = fileSystemTool.getFileInfo(deepDir.toString()).block();
+        assertNotNull(info);
+        assertTrue(info.isDirectory());
+      } finally {
+        // Cleanup
+        Files.walk(testDir)
+            .sorted(java.util.Comparator.reverseOrder())
+            .forEach(
+                path -> {
+                  try {
+                    if (!path.equals(testDir) && !path.equals(testFile)) {
+                      Files.deleteIfExists(path);
+                    }
+                  } catch (IOException e) {
+                    // Ignore
+                  }
+                });
+      }
+    }
+
+    @Test
+    @DisplayName("Should handle directory with many files")
+    void testDirectoryWithManyFiles() throws IOException {
+      for (int i = 0; i < 50; i++) {
+        Files.writeString(testDir.resolve("file" + i + ".txt"), "content" + i);
+      }
+
+      try {
+        DirectoryListing listing = fileSystemTool.listDirectory(testDir.toString()).block();
+
+        assertNotNull(listing);
+        assertTrue(listing.isSuccess());
+        assertThat(listing.getTotalItems()).isGreaterThanOrEqualTo(50);
+      } finally {
+        // Cleanup
+        for (int i = 0; i < 50; i++) {
+          Files.deleteIfExists(testDir.resolve("file" + i + ".txt"));
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("File Locking and Concurrent Access Tests")
+  class FileLockingTests {
+
+    @Test
+    @DisplayName("Should handle concurrent file reads")
+    void testConcurrentFileReads() throws IOException {
+      Path sharedFile = testDir.resolve("shared.txt");
+      Files.writeString(sharedFile, "Shared content");
+
+      try {
+        // Multiple reads should succeed
+        FileContent result1 = fileSystemTool.readFile(sharedFile.toString()).block();
+        FileContent result2 = fileSystemTool.readFile(sharedFile.toString()).block();
+
+        assertNotNull(result1);
+        assertNotNull(result2);
+        assertTrue(result1.isSuccess());
+        assertTrue(result2.isSuccess());
+        assertEquals(result1.getContent(), result2.getContent());
+      } finally {
+        Files.deleteIfExists(sharedFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should handle overwrite scenarios")
+    void testOverwriteScenarios() throws IOException {
+      Path targetFile = testDir.resolve("overwrite.txt");
+      Files.writeString(targetFile, "Original");
+
+      try {
+        FileOperationResult result1 =
+            fileSystemTool.writeFile(targetFile.toString(), "First Update").block();
+        assertTrue(result1.isSuccess());
+
+        FileOperationResult result2 =
+            fileSystemTool.writeFile(targetFile.toString(), "Second Update").block();
+        assertTrue(result2.isSuccess());
+
+        FileContent content = fileSystemTool.readFile(targetFile.toString()).block();
+        assertEquals("Second Update", content.getContent());
+      } finally {
+        Files.deleteIfExists(targetFile);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Special Characters and Encoding Tests")
+  class SpecialCharactersTests {
+
+    @Test
+    @DisplayName("Should handle unicode content")
+    void testUnicodeContent() throws IOException {
+      String unicodeContent = "Hello 世界 🌍 مرحبا";
+      Path unicodeFile = testDir.resolve("unicode.txt");
+
+      try {
+        FileOperationResult writeResult =
+            fileSystemTool.writeFile(unicodeFile.toString(), unicodeContent).block();
+        assertTrue(writeResult.isSuccess());
+
+        FileContent readResult = fileSystemTool.readFile(unicodeFile.toString()).block();
+        assertTrue(readResult.isSuccess());
+        assertEquals(unicodeContent, readResult.getContent());
+      } finally {
+        Files.deleteIfExists(unicodeFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should handle filenames with special characters")
+    void testFilenamesWithSpecialCharacters() throws IOException {
+      Path specialFile = testDir.resolve("file-with_special.chars.txt");
+
+      try {
+        FileOperationResult result =
+            fileSystemTool.writeFile(specialFile.toString(), "Content").block();
+        assertTrue(result.isSuccess());
+
+        Boolean exists = fileSystemTool.exists(specialFile.toString()).block();
+        assertTrue(exists);
+      } finally {
+        Files.deleteIfExists(specialFile);
+      }
+    }
+
+    @Test
+    @DisplayName("Should handle files with multiple extensions")
+    void testMultipleExtensions() throws IOException {
+      Path multiExtFile = testDir.resolve("archive.tar.gz");
+
+      try {
+        FileOperationResult result =
+            fileSystemTool.writeFile(multiExtFile.toString(), "Archive").block();
+        assertTrue(result.isSuccess());
+
+        FileInfo info = fileSystemTool.getFileInfo(multiExtFile.toString()).block();
+        assertNotNull(info);
+        assertThat(info.getExtension()).isNotNull();
+      } finally {
+        Files.deleteIfExists(multiExtFile);
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Search Edge Cases Tests")
+  class SearchEdgeCasesTests {
+
+    @Test
+    @DisplayName("Should handle search with no matches")
+    void testSearchWithNoMatches() {
+      FileSearchRequest request =
+          FileSearchRequest.builder()
+              .directory(testDir)
+              .pattern("*.nonexistent")
+              .recursive(false)
+              .build();
+
+      List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+      assertNotNull(results);
+      assertTrue(results.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should handle complex glob patterns")
+    void testComplexGlobPatterns() throws IOException {
+      Files.writeString(testDir.resolve("test1.txt"), "content");
+      Files.writeString(testDir.resolve("test2.log"), "content");
+      Files.writeString(testDir.resolve("data.txt"), "content");
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("test*.txt")
+                .recursive(false)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results.size()).isGreaterThanOrEqualTo(1);
+        assertThat(results).allMatch(info -> info.getName().startsWith("test"));
+      } finally {
+        Files.deleteIfExists(testDir.resolve("test1.txt"));
+        Files.deleteIfExists(testDir.resolve("test2.log"));
+        Files.deleteIfExists(testDir.resolve("data.txt"));
+      }
+    }
+
+    @Test
+    @DisplayName("Should respect max results limit")
+    void testMaxResultsLimit() throws IOException {
+      for (int i = 0; i < 20; i++) {
+        Files.writeString(testDir.resolve("file" + i + ".txt"), "content");
+      }
+
+      try {
+        FileSearchRequest request =
+            FileSearchRequest.builder()
+                .directory(testDir)
+                .pattern("*.txt")
+                .recursive(false)
+                .maxResults(10)
+                .build();
+
+        List<FileInfo> results = fileSystemTool.findFiles(request).block();
+
+        assertNotNull(results);
+        assertThat(results.size()).isLessThanOrEqualTo(10);
+      } finally {
+        for (int i = 0; i < 20; i++) {
+          Files.deleteIfExists(testDir.resolve("file" + i + ".txt"));
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("Configuration Validation Tests")
+  class ConfigurationValidationTests {
+
+    @Test
+    @DisplayName("Should enforce read-only configuration")
+    void testReadOnlyConfiguration() {
+      FileSystemTool readOnlyTool = new FileSystemTool(FileSystemConfig.readOnly());
+      Path newFile = testDir.resolve("readonly-test.txt");
+
+      assertThrows(
+          SecurityException.class,
+          () -> readOnlyTool.writeFile(newFile.toString(), "test").block());
+
+      assertThrows(
+          SecurityException.class, () -> readOnlyTool.deleteFile(testFile.toString()).block());
+    }
+
+    @Test
+    @DisplayName("Should enforce sandboxed configuration")
+    void testSandboxedConfiguration() {
+      FileSystemTool sandboxedTool =
+          new FileSystemTool(FileSystemConfig.sandboxed(testDir.toString()));
+
+      // Should allow access within sandbox
+      assertDoesNotThrow(() -> sandboxedTool.readFile(testFile.toString()).block());
+
+      // Should deny access outside sandbox
+      assertThrows(
+          SecurityException.class, () -> sandboxedTool.readFile("/tmp/outside.txt").block());
+    }
+  }
 }
