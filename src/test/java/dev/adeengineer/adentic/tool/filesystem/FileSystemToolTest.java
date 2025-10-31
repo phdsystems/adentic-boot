@@ -1007,10 +1007,10 @@ class FileSystemToolTest {
       Files.writeString(oldFile, "old");
 
       try {
-        // Wait a bit
-        Thread.sleep(100);
+        // Wait longer to ensure filesystem timestamp granularity difference
+        Thread.sleep(1000);
         java.time.Instant cutoff = java.time.Instant.now();
-        Thread.sleep(100);
+        Thread.sleep(1000);
 
         Path newFile = testDir.resolve("new.txt");
         Files.writeString(newFile, "new");
