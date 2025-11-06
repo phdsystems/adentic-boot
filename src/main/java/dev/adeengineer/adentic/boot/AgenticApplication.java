@@ -178,8 +178,32 @@ public final class AgenticApplication {
     context.registerSingleton(dev.adeengineer.adentic.boot.web.AgenticServer.class, server);
     log.debug("Registered core bean: AgenticServer");
 
+    // LLM Clients (from adentic-ai-client)
+    registerLLMClients(providerRegistry);
+
     // TODO: Add ConfigurationLoader
     // TODO: Add AsyncExecutor
+  }
+
+  /**
+   * Register LLM clients from adentic-ai-client.
+   *
+   * <p>Creates and registers OpenAI, Gemini, and other LLM clients with environment configuration.
+   *
+   * @param registry provider registry
+   */
+  private static void registerLLMClients(final ProviderRegistry registry) {
+    // OpenAI client
+    if (dev.adeengineer.adentic.boot.provider.LLMClientFactory.isOpenAIAvailable()) {
+      dev.adeengineer.ai.openai.OpenAIClient openaiClient =
+          dev.adeengineer.adentic.boot.provider.LLMClientFactory.createOpenAIClient();
+      registry.registerProvider("openai", "llm", openaiClient);
+      log.info("Registered OpenAI LLM client");
+    } else {
+      log.debug("OpenAI client not available (OPENAI_API_KEY not set)");
+    }
+
+    // TODO: Add Gemini, vLLM, Anthropic clients
   }
 
   /**

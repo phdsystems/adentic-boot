@@ -72,6 +72,12 @@
       <version>1.0.0-SNAPSHOT</version>
     </dependency>
 
+    <!-- Adentic Health - Official health check and liveness probe system -->
+    <dependency>
+      <groupId>dev.adeengineer</groupId>
+      <artifactId>adentic-health</artifactId>
+    </dependency>
+
     <!-- Javalin - Lightweight HTTP server -->
     <dependency>
       <groupId>io.javalin</groupId>

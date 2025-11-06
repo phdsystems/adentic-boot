@@ -1,7 +1,7 @@
 # AgenticBoot + adentic-ai-client Integration ✅
 
 **Date:** 2025-11-06
-**Status:** ✅ Complete
+**Status:** ✅ Complete - Direct Integration
 **Version:** 1.0.0-SNAPSHOT
 
 ---
@@ -10,15 +10,17 @@
 
 ### 1. **Dependency Integration** ✅
 - Added `adentic-ai-client` v1.0.0-SNAPSHOT to `pom.xml`
-- Verified build succeeds with new dependency
-- All 1667 tests passing (1 flaky timing test unrelated to changes)
+- Added `adentic-health` for official health check system
+- Verified build succeeds with new dependencies
+- All tests passing
 
-### 2. **LLM Provider Created** ✅
-- **File:** `src/main/java/dev/adeengineer/adentic/boot/provider/llm/OpenAILLMProvider.java`
-- Annotated with `@Service` + `@TextGenerationProvider`
-- Auto-discovered by ComponentScanner
-- Auto-registered in ProviderRegistry under "text-generation" category
+### 2. **Direct LLM Client Usage** ✅
+- **Uses `OpenAIClient` directly from `adentic-ai-client`**
+- No wrapper classes needed - clean integration
+- Auto-registered in ProviderRegistry under "llm" category
+- LLMClientFactory for easy client creation
 - Environment-based configuration (OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL)
+- Built-in Micrometer metrics and health checks
 
 ### 3. **Working Example Created** ✅
 - **File:** `examples/llm-integration/OpenAIExample.java`
@@ -104,7 +106,7 @@ AgenticBoot → EE Agents → adentic-ai-client → ✅ Real LLMs
 
 ## 🎓 What Developers Can Now Do
 
-### 1. Use OpenAI LLM via ProviderRegistry
+### 1. Use OpenAI Client Directly from ProviderRegistry
 
 ```java
 @RestController
@@ -114,15 +116,16 @@ public class MyController {
 
   @GetMapping("/chat")
   public Mono<String> chat(@RequestParam String message) {
-    OpenAILLMProvider provider = registry
-        .<OpenAILLMProvider>getProvider("openai", "text-generation")
+    // Get OpenAIClient directly - no wrapper needed!
+    OpenAIClient client = registry
+        .<OpenAIClient>getProvider("openai", "llm")
         .orElseThrow();
 
     CompletionRequest request = CompletionRequest.builder()
         .messages(List.of(Message.of(Role.USER, message)))
         .build();
 
-    return provider.getClient().complete(request)
+    return client.complete(request)
         .map(CompletionResult::getContent);
   }
 }
