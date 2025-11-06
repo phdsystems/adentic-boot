@@ -3,6 +3,7 @@ package dev.adeengineer.adentic.boot.scanner;
 import dev.adeengineer.adentic.boot.annotations.Component;
 import dev.adeengineer.adentic.boot.annotations.RestController;
 import dev.adeengineer.adentic.boot.annotations.Service;
+import dev.adeengineer.agent.Agent;
 import dev.adeengineer.annotation.provider.DatabaseProvider;
 import dev.adeengineer.annotation.provider.EvaluationProvider;
 import dev.adeengineer.annotation.provider.InfrastructureProvider;
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  *       MemoryProvider}, {@link TaskQueueProvider}, {@link ToolProvider}, {@link
  *       EvaluationProvider}, {@link WebSearchProvider}, {@link WebTestProvider}, {@link
  *       DatabaseProvider}
+ *   <li>EE Agents: Classes implementing {@link Agent} interface
  * </ul>
  *
  * <p>Example usage:
@@ -49,6 +51,9 @@ import lombok.extern.slf4j.Slf4j;
  *
  * // Scan providers grouped by category
  * Map<String, Set<Class<?>>> providers = scanner.scanProviders();
+ *
+ * // Scan for Agent implementations
+ * Set<Class<?>> agents = scanner.scanAgents();
  *
  * // Scan specific annotation type
  * Set<Class<?>> llmProviders = scanner.scanForAnnotation(TextGenerationProvider.class);
@@ -210,6 +215,43 @@ public class ComponentScanner {
   }
 
   /**
+   * Scan for all Agent implementations.
+   *
+   * <p>Scans the classpath for all concrete classes that implement the {@link Agent} interface.
+   * This enables auto-discovery of EE agents (SimpleAgent, ReActAgent, ChainOfThoughtAgent, etc.)
+   * without requiring annotation-based registration.
+   *
+   * <p>Only concrete classes are returned - interfaces and abstract classes are filtered out.
+   *
+   * @return set of classes implementing Agent interface
+   */
+  public Set<Class<?>> scanAgents() {
+    long startTime = System.currentTimeMillis();
+    Set<Class<?>> agents = new HashSet<>();
+
+    String path = basePackage.replace('.', '/');
+    URL resource = classLoader.getResource(path);
+
+    if (resource == null) {
+      log.warn("Base package not found: {}", basePackage);
+      return agents;
+    }
+
+    File directory = new File(resource.getFile());
+    if (!directory.exists()) {
+      log.warn("Base package directory not found: {}", basePackage);
+      return agents;
+    }
+
+    scanDirectoryForInterface(directory, basePackage, Agent.class, agents);
+
+    long duration = System.currentTimeMillis() - startTime;
+    log.info("Agent scan completed: found {} agents in {}ms", agents.size(), duration);
+
+    return agents;
+  }
+
+  /**
    * Recursively scan directory for annotated classes.
    *
    * @param directory the directory to scan
@@ -279,5 +321,56 @@ public class ComponentScanner {
     }
 
     return false;
+  }
+
+  /**
+   * Recursively scan directory for classes implementing a specific interface.
+   *
+   * @param directory the directory to scan
+   * @param packageName the package name
+   * @param interfaceType the interface type to scan for
+   * @param implementations the set to add found implementations
+   */
+  private void scanDirectoryForInterface(
+      final File directory,
+      final String packageName,
+      final Class<?> interfaceType,
+      final Set<Class<?>> implementations) {
+
+    File[] files = directory.listFiles();
+    if (files == null) {
+      return;
+    }
+
+    for (File file : files) {
+      if (file.isDirectory()) {
+        // Recursively scan subdirectories
+        scanDirectoryForInterface(
+            file, packageName + "." + file.getName(), interfaceType, implementations);
+      } else if (file.getName().endsWith(".class")) {
+        // Load class and check interface implementation
+        String className =
+            packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
+        try {
+          Class<?> clazz = classLoader.loadClass(className);
+
+          // Only include concrete classes (not interfaces or abstract classes)
+          if (interfaceType.isAssignableFrom(clazz)
+              && !clazz.isInterface()
+              && !java.lang.reflect.Modifier.isAbstract(clazz.getModifiers())) {
+            implementations.add(clazz);
+            log.debug(
+                "Found {} implementation: {}",
+                interfaceType.getSimpleName(),
+                clazz.getSimpleName());
+          }
+        } catch (ClassNotFoundException e) {
+          log.warn("Failed to load class: {}", className, e);
+        } catch (NoClassDefFoundError e) {
+          // Ignore classes with missing dependencies
+          log.trace("Skipped class with missing dependencies: {}", className);
+        }
+      }
+    }
   }
 }

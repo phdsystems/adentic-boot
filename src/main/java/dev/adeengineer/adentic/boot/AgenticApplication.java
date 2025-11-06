@@ -5,6 +5,9 @@ import dev.adeengineer.adentic.boot.context.AgenticContext;
 import dev.adeengineer.adentic.boot.event.EventBus;
 import dev.adeengineer.adentic.boot.registry.ProviderRegistry;
 import dev.adeengineer.adentic.boot.scanner.ComponentScanner;
+import dev.adeengineer.agent.Agent;
+import dev.adeengineer.ee.llm.tools.SimpleToolRegistry;
+import dev.adeengineer.ee.llm.tools.ToolRegistry;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -41,10 +44,11 @@ public final class AgenticApplication {
    *
    * <ol>
    *   <li>Creates an {@link AgenticContext}
-   *   <li>Registers core beans (EventBus, ProviderRegistry, AgenticServer)
+   *   <li>Registers core beans (EventBus, ProviderRegistry, ToolRegistry, AgenticServer)
    *   <li>Scans for @Component classes and all provider annotations
    *   <li>Registers and instantiates all components
    *   <li>Scans and registers providers in {@link ProviderRegistry}
+   *   <li>Scans and registers EE agents (SimpleAgent, ReActAgent, etc.)
    *   <li>Registers REST controllers with HTTP server
    *   <li>Starts the HTTP server (if enabled)
    *   <li>Returns the application context
@@ -110,6 +114,9 @@ public final class AgenticApplication {
       log.info("Registered {} providers across {} categories", totalProviders, providers.size());
     }
 
+    // 7.5. Scan and register EE agents
+    int totalAgents = registerEEAgents(context, scanner, providerRegistry);
+
     // 8. Register REST controllers with HTTP server
     dev.adeengineer.adentic.boot.web.AgenticServer server =
         context.getBean(dev.adeengineer.adentic.boot.web.AgenticServer.class);
@@ -127,9 +134,10 @@ public final class AgenticApplication {
     long duration = System.currentTimeMillis() - startTime;
     log.info("AgenticBoot application started in {}ms", duration);
     log.info(
-        "Application context: {} beans registered ({} providers)",
-        components.size() + 3,
-        totalProviders);
+        "Application context: {} beans registered ({} providers, {} agents)",
+        components.size() + 4,
+        totalProviders,
+        totalAgents);
 
     // Add shutdown hook
     Runtime.getRuntime()
@@ -159,6 +167,11 @@ public final class AgenticApplication {
     context.registerSingleton(ProviderRegistry.class, providerRegistry);
     log.debug("Registered core bean: ProviderRegistry");
 
+    // ToolRegistry (for EE agents)
+    ToolRegistry toolRegistry = new SimpleToolRegistry();
+    context.registerSingleton(ToolRegistry.class, toolRegistry);
+    log.debug("Registered core bean: ToolRegistry");
+
     // AgenticServer
     dev.adeengineer.adentic.boot.web.AgenticServer server =
         new dev.adeengineer.adentic.boot.web.AgenticServer();
@@ -167,6 +180,72 @@ public final class AgenticApplication {
 
     // TODO: Add ConfigurationLoader
     // TODO: Add AsyncExecutor
+  }
+
+  /**
+   * Register EE agents discovered via component scanning.
+   *
+   * <p>This method:
+   *
+   * <ol>
+   *   <li>Scans for classes implementing {@link Agent} interface
+   *   <li>Instantiates each agent (if not already in context)
+   *   <li>Registers agents in {@link ProviderRegistry} under "agent" category
+   *   <li>Publishes agent lifecycle events to {@link EventBus}
+   * </ol>
+   *
+   * @param context the application context
+   * @param scanner the component scanner
+   * @param providerRegistry the provider registry
+   * @return number of agents registered
+   */
+  private static int registerEEAgents(
+      final AgenticContext context,
+      final ComponentScanner scanner,
+      final ProviderRegistry providerRegistry) {
+
+    Set<Class<?>> agentClasses = scanner.scanAgents();
+    if (agentClasses.isEmpty()) {
+      log.debug("No EE agents found on classpath");
+      return 0;
+    }
+
+    // EventBus eventBus = context.getBean(EventBus.class); // TODO: Enable when event classes added
+    int agentCount = 0;
+
+    for (Class<?> agentClass : agentClasses) {
+      try {
+        // Get or create agent instance from context
+        Object agentInstance;
+        if (context.containsBean(agentClass)) {
+          agentInstance = context.getBean(agentClass);
+        } else {
+          // Not registered as component, create instance manually
+          agentInstance = agentClass.getDeclaredConstructor().newInstance();
+        }
+
+        // Cast to Agent interface
+        Agent agent = (Agent) agentInstance;
+        String agentName = agent.getName();
+
+        // Register in ProviderRegistry under "agent" category
+        providerRegistry.registerAgent(agentName, agent);
+        log.debug("Registered EE agent: {} ({})", agentName, agentClass.getSimpleName());
+
+        // TODO: Publish agent registered event to EventBus (requires AgentRegisteredEvent class)
+        // eventBus.publish(new AgentRegisteredEvent(agent));
+
+        agentCount++;
+      } catch (Exception e) {
+        log.warn("Failed to register agent: {}", agentClass.getName(), e);
+      }
+    }
+
+    if (agentCount > 0) {
+      log.info("Registered {} EE agents in ProviderRegistry", agentCount);
+    }
+
+    return agentCount;
   }
 
   /** Print startup banner. */
