@@ -81,6 +81,8 @@ public class ProviderRegistry {
     providers.put("queue", new LinkedHashMap<>());
     providers.put("tool", new LinkedHashMap<>());
     providers.put("evaluation", new LinkedHashMap<>());
+    // NEW: EE categories
+    providers.put("agent", new LinkedHashMap<>());
   }
 
   /**
@@ -248,6 +250,38 @@ public class ProviderRegistry {
 
     throw new IllegalArgumentException(
         "Class " + providerClass.getName() + " is not annotated with a provider annotation");
+  }
+
+  /**
+   * Register an EE agent in the "agent" category.
+   *
+   * @param name the agent name (e.g., "simple", "react", "cot")
+   * @param instance the agent instance
+   */
+  public void registerAgent(final String name, final Object instance) {
+    registerProvider("agent", name, instance);
+    log.info("Registered EE agent: {}", name);
+  }
+
+  /**
+   * Get an agent by name from "agent" category.
+   *
+   * @param name the agent name
+   * @param <T> the expected agent type
+   * @return optional containing the agent, or empty if not found
+   */
+  @SuppressWarnings("unchecked")
+  public <T> Optional<T> getAgent(final String name) {
+    return (Optional<T>) getProvider("agent", name);
+  }
+
+  /**
+   * Get all registered agents.
+   *
+   * @return map of agent name to agent instance
+   */
+  public Map<String, Object> getAllAgents() {
+    return getProvidersByCategory("agent");
   }
 
   /**

@@ -125,7 +125,8 @@ class ProviderRegistryTest {
             "memory",
             "queue",
             "tool",
-            "evaluation");
+            "evaluation",
+            "agent"); // NEW: EE agent category
   }
 
   @Test
@@ -422,7 +423,7 @@ class ProviderRegistryTest {
     @DisplayName("Should maintain category initialization")
     void shouldMaintainCategoryInitialization() {
       // All categories should be initialized even if empty
-      assertThat(registry.getCategories()).hasSize(9);
+      assertThat(registry.getCategories()).hasSize(10); // Updated: added "agent" category
 
       for (String category : registry.getCategories()) {
         assertThat(registry.getProvidersByCategory(category)).isNotNull();
