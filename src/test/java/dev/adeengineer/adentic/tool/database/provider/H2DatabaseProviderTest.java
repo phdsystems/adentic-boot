@@ -8,6 +8,7 @@ import dev.adeengineer.adentic.tool.database.config.DatabaseConfig;
 import dev.adeengineer.adentic.tool.database.model.DatabaseType;
 import dev.adeengineer.adentic.tool.database.model.QueryResult;
 import dev.adeengineer.adentic.tool.database.model.TransactionResult;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.*;
@@ -1032,8 +1033,10 @@ class H2DatabaseProviderTest {
     @Test
     @DisplayName("Should execute update with Map parameters")
     void shouldExecuteUpdateWithMapParameters() {
-      // Given
-      Map<String, Object> params = Map.of("name", "Alice", "age", 25);
+      // Given - Use LinkedHashMap to preserve insertion order for positional parameters
+      Map<String, Object> params = new LinkedHashMap<>();
+      params.put("name", "Alice");
+      params.put("age", 25);
 
       // When
       Long affected =
