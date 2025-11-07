@@ -334,11 +334,11 @@ docker.stopAllContainers();
 ## Coverage Impact
 
 ### Before Core Infrastructure Integration
-- **Coverage:** 12 out of 36 modules (33%)
+- **Coverage:** 8 out of 36 modules (22%)
 - **Infrastructure Support:** Limited
 
 ### After Core Infrastructure Integration
-- **Coverage:** 15 out of 36 modules (42%) ✅
+- **Coverage:** 11 out of 36 modules (31%) ✅
 - **Infrastructure Support:** Full
 - **Benefits:**
   - Zero-dependency metrics collection
@@ -359,7 +359,7 @@ docker.stopAllContainers();
 3. **composition** - Composition patterns and utilities
 
 **Expected Impact:**
-- Coverage: 42% → 50% (+3 modules)
+- Coverage: 31% → 39% (+3 modules)
 - Enhanced observability
 - Async processing patterns
 - Agent/tool composition utilities
@@ -371,7 +371,7 @@ docker.stopAllContainers();
 2. **adentic-micronaut** - Micronaut integration adapter
 
 **Expected Impact:**
-- Coverage: 50% → 56% (+2 modules)
+- Coverage: 39% → 44% (+2 modules)
 - Framework-agnostic deployment
 - Quarkus and Micronaut support (as claimed in README)
 - True multi-framework compatibility
@@ -385,7 +385,7 @@ docker.stopAllContainers();
 - [x] Full test suite passing (1,668 tests)
 - [x] Build successful
 - [x] Documentation complete
-- [x] Coverage increased from 33% to 42%
+- [x] Coverage increased from 22% to 31%
 - [x] Identified and excluded legacy module (adentic-core-impl)
 - [x] Excluded adentic-platform per user request
 - [x] Avoided circular dependency
