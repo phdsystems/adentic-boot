@@ -2,6 +2,7 @@ package dev.adeengineer.adentic.boot.provider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.adeengineer.adentic.agent.coordination.InMemoryMessageBus;
+import dev.adeengineer.adentic.boot.embedding.OpenAIEmbeddingService;
 import dev.adeengineer.adentic.provider.memory.InMemoryMemoryProvider;
 import dev.adeengineer.adentic.provider.orchestration.SimpleOrchestrationProvider;
 import dev.adeengineer.adentic.provider.queue.InMemoryTaskQueueProvider;
@@ -9,6 +10,7 @@ import dev.adeengineer.adentic.provider.tools.MavenToolProvider;
 import dev.adeengineer.adentic.provider.tools.SimpleToolProvider;
 import dev.adeengineer.adentic.storage.local.LocalStorageProvider;
 import dev.adeengineer.adentic.tool.config.MavenToolConfig;
+import dev.adeengineer.rag.embedding.EmbeddingService;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,6 +47,24 @@ public final class InfrastructureProviderFactory {
   }
 
   /**
+   * Create OpenAI embedding service.
+   *
+   * <p>Provides text embedding generation using OpenAI API.
+   *
+   * @param apiKey OpenAI API key
+   * @param model Model name (null = text-embedding-3-small)
+   * @param objectMapper JSON mapper for request/response
+   * @return configured embedding service
+   */
+  public static EmbeddingService createOpenAIEmbeddingService(
+      final String apiKey, final String model, final ObjectMapper objectMapper) {
+    log.info(
+        "Creating OpenAI embedding service with model: {}",
+        model != null ? model : "text-embedding-3-small");
+    return new OpenAIEmbeddingService(apiKey, model, objectMapper);
+  }
+
+  /**
    * Create in-memory memory provider.
    *
    * <p>Provides short-term memory storage with vector similarity search.
@@ -53,7 +73,7 @@ public final class InfrastructureProviderFactory {
    * @return configured memory provider
    */
   public static InMemoryMemoryProvider createMemoryProvider(
-      final dev.adeengineer.rag.embedding.EmbeddingService embeddingService) {
+      final EmbeddingService embeddingService) {
     log.info("Creating InMemory memory provider");
 
     if (embeddingService == null) {

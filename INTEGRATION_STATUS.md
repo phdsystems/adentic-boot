@@ -29,7 +29,7 @@ All integrations follow the **direct integration pattern** - using library class
 | **Infrastructure - Tools** | ✅ Complete | 1.0.0-SNAPSHOT | ✅ Yes | ✅ Yes | ⏳ Pending | ✅ Complete |
 | **Infrastructure - Storage** | ✅ Complete | 1.0.0-SNAPSHOT | ✅ Yes | ✅ Yes | ⏳ Pending | ✅ Complete |
 | **Infrastructure - Messaging** | ✅ Complete | 1.0.0-SNAPSHOT | ✅ Yes | ✅ Yes | ⏳ Pending | ✅ Complete |
-| **Infrastructure - Memory** | ⏳ Pending | - | ❌ No | ❌ No | - | ⏳ Pending EmbeddingService |
+| **Infrastructure - Memory** | ✅ Complete | 1.0.0-SNAPSHOT | ✅ Yes | ✅ Yes | ⏳ Pending | ✅ Complete |
 
 ---
 
@@ -62,11 +62,11 @@ All integrations follow the **direct integration pattern** - using library class
 │  └─> Infrastructure (from adentic-core)                            │
 │      ├─> InMemoryTaskQueueProvider                   ✅           │
 │      ├─> SimpleOrchestrationProvider                 ✅           │
-│      ├─> SimpleToolProvider                          ✅ NEW       │
-│      ├─> MavenToolProvider                           ✅ NEW       │
-│      ├─> LocalStorageProvider                        ✅ NEW       │
-│      ├─> InMemoryMessageBus                          ✅ NEW       │
-│      └─> InMemoryMemoryProvider                      ⏳ Pending   │
+│      ├─> SimpleToolProvider                          ✅           │
+│      ├─> MavenToolProvider                           ✅           │
+│      ├─> LocalStorageProvider                        ✅           │
+│      ├─> InMemoryMessageBus                          ✅           │
+│      └─> InMemoryMemoryProvider                      ✅ NEW       │
 │                                                                      │
 └────────────────────────────────────────────────────────────────────┘
                                  ↓

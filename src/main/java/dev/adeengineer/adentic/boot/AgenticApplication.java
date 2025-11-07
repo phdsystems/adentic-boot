@@ -272,8 +272,32 @@ public final class AgenticApplication {
     registry.registerProvider("messaging", "in-memory", messageBus);
     log.info("Registered InMemory message bus");
 
-    // Memory Provider (note: requires EmbeddingService, will be added when available)
-    // TODO: Add InMemoryMemoryProvider when EmbeddingService is configured
+    // Memory Provider (requires EmbeddingService)
+    try {
+      String embeddingApiKey =
+          System.getProperty("openai.api.key", System.getenv("OPENAI_API_KEY"));
+      if (embeddingApiKey != null && !embeddingApiKey.isBlank()) {
+        String embeddingModel =
+            System.getProperty("openai.embedding.model", "text-embedding-3-small");
+        com.fasterxml.jackson.databind.ObjectMapper objectMapper =
+            new com.fasterxml.jackson.databind.ObjectMapper();
+
+        dev.adeengineer.rag.embedding.EmbeddingService embeddingService =
+            dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
+                .createOpenAIEmbeddingService(embeddingApiKey, embeddingModel, objectMapper);
+
+        dev.adeengineer.adentic.provider.memory.InMemoryMemoryProvider memoryProvider =
+            dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
+                .createMemoryProvider(embeddingService);
+
+        registry.registerProvider("memory", "in-memory", memoryProvider);
+        log.info("Registered InMemory memory provider with OpenAI embeddings");
+      } else {
+        log.info("Memory provider not registered - OPENAI_API_KEY not configured");
+      }
+    } catch (Exception e) {
+      log.error("Failed to register InMemory memory provider: {}", e.getMessage(), e);
+    }
   }
 
   /**
