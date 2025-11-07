@@ -65,6 +65,13 @@
       <artifactId>adentic-ee-core</artifactId>
     </dependency>
 
+    <!-- Adentic EE Observability - Enterprise observability, ITSM, compliance, audit -->
+    <dependency>
+      <groupId>dev.adeengineer.ee</groupId>
+      <artifactId>adentic-ee-observability</artifactId>
+      <version>${adentic.version}</version>
+    </dependency>
+
     <!-- Adentic AI Client - Unified LLM client for OpenAI, Gemini, vLLM, etc. -->
     <dependency>
       <groupId>dev.adeengineer</groupId>
