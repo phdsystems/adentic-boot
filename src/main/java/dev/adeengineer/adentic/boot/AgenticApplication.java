@@ -212,7 +212,8 @@ public final class AgenticApplication {
   /**
    * Register infrastructure providers from adentic-core.
    *
-   * <p>Creates and registers infrastructure providers for task queues, memory, and orchestration.
+   * <p>Creates and registers infrastructure providers for task queues, orchestration, tools,
+   * storage, messaging, and memory.
    *
    * @param registry provider registry
    */
@@ -231,6 +232,45 @@ public final class AgenticApplication {
                 .createOrchestrationProvider();
     registry.registerProvider("orchestration", "simple", orchestrationProvider);
     log.info("Registered Simple orchestration provider");
+
+    // Tool Providers
+    dev.adeengineer.adentic.provider.tools.SimpleToolProvider simpleToolProvider =
+        dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
+            .createSimpleToolProvider();
+    registry.registerProvider("tool", "simple", simpleToolProvider);
+    log.info("Registered Simple tool provider");
+
+    dev.adeengineer.adentic.tool.config.MavenToolConfig mavenConfig =
+        dev.adeengineer.adentic.tool.config.MavenToolConfig.builder()
+            .workingDirectory(System.getProperty("user.dir"))
+            .timeoutSeconds(300)
+            .autoInstallWrapper(true)
+            .build();
+    dev.adeengineer.adentic.provider.tools.MavenToolProvider mavenToolProvider =
+        dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory.createMavenToolProvider(
+            mavenConfig);
+    registry.registerProvider("tool", "maven", mavenToolProvider);
+    log.info("Registered Maven tool provider");
+
+    // Storage Provider
+    try {
+      String storagePath = System.getProperty("adentic.storage.path", "./data/storage");
+      com.fasterxml.jackson.databind.ObjectMapper objectMapper =
+          new com.fasterxml.jackson.databind.ObjectMapper();
+      dev.adeengineer.adentic.storage.local.LocalStorageProvider storageProvider =
+          dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
+              .createLocalStorageProvider(storagePath, objectMapper);
+      registry.registerProvider("storage", "local", storageProvider);
+      log.info("Registered Local storage provider");
+    } catch (Exception e) {
+      log.error("Failed to register Local storage provider: {}", e.getMessage(), e);
+    }
+
+    // Messaging Provider
+    dev.adeengineer.adentic.agent.coordination.InMemoryMessageBus messageBus =
+        dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory.createMessageBus();
+    registry.registerProvider("messaging", "in-memory", messageBus);
+    log.info("Registered InMemory message bus");
 
     // Memory Provider (note: requires EmbeddingService, will be added when available)
     // TODO: Add InMemoryMemoryProvider when EmbeddingService is configured

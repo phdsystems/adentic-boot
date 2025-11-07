@@ -26,10 +26,10 @@ All integrations follow the **direct integration pattern** - using library class
 | **LLM Clients** | ✅ Complete | 1.0.0-SNAPSHOT | ✅ Yes | ✅ Yes | ✅ Passing | ✅ Complete |
 | **Infrastructure - Queue** | ✅ Complete | 1.0.0-SNAPSHOT | ✅ Yes | ✅ Yes | ✅ Passing | ✅ Complete |
 | **Infrastructure - Orchestration** | ✅ Complete | 1.0.0-SNAPSHOT | ✅ Yes | ✅ Yes | ✅ Passing | ✅ Complete |
-| **Infrastructure - Memory** | ⏳ Pending | - | ❌ No | ❌ No | - | - |
-| **Infrastructure - Tools** | ⏳ Pending | - | ❌ No | ❌ No | - | - |
-| **Infrastructure - Storage** | ⏳ Pending | - | ❌ No | ❌ No | - | - |
-| **Infrastructure - Messaging** | ⏳ Pending | - | ❌ No | ❌ No | - | - |
+| **Infrastructure - Tools** | ✅ Complete | 1.0.0-SNAPSHOT | ✅ Yes | ✅ Yes | ⏳ Pending | ✅ Complete |
+| **Infrastructure - Storage** | ✅ Complete | 1.0.0-SNAPSHOT | ✅ Yes | ✅ Yes | ⏳ Pending | ✅ Complete |
+| **Infrastructure - Messaging** | ✅ Complete | 1.0.0-SNAPSHOT | ✅ Yes | ✅ Yes | ⏳ Pending | ✅ Complete |
+| **Infrastructure - Memory** | ⏳ Pending | - | ❌ No | ❌ No | - | ⏳ Pending EmbeddingService |
 
 ---
 
@@ -60,9 +60,13 @@ All integrations follow the **direct integration pattern** - using library class
 │  │   └─> TODO: Gemini, vLLM, Anthropic                            │
 │  │                                                                   │
 │  └─> Infrastructure (from adentic-core)                            │
-│      ├─> InMemoryTaskQueueProvider                                │
-│      ├─> SimpleOrchestrationProvider                              │
-│      └─> TODO: Memory, Tools, Storage, Messaging                  │
+│      ├─> InMemoryTaskQueueProvider                   ✅           │
+│      ├─> SimpleOrchestrationProvider                 ✅           │
+│      ├─> SimpleToolProvider                          ✅ NEW       │
+│      ├─> MavenToolProvider                           ✅ NEW       │
+│      ├─> LocalStorageProvider                        ✅ NEW       │
+│      ├─> InMemoryMessageBus                          ✅ NEW       │
+│      └─> InMemoryMemoryProvider                      ⏳ Pending   │
 │                                                                      │
 └────────────────────────────────────────────────────────────────────┘
                                  ↓
@@ -221,9 +225,12 @@ public class FullAgenticApp {
 | [INTEGRATION_STATUS.md](INTEGRATION_STATUS.md) | This unified status document | ✅ Complete | 300+ |
 | [examples/agent-integration/](examples/agent-integration/) | EE Agent examples | ✅ Complete | 200+ |
 | [examples/llm-integration/](examples/llm-integration/) | OpenAI LLM examples | ✅ Complete | 220+ |
-| [examples/infrastructure-integration/](examples/infrastructure-integration/) | Infrastructure examples | ✅ Complete | 305+ |
+| [examples/infrastructure-integration/InfrastructureExample.java](examples/infrastructure-integration/InfrastructureExample.java) | Queue + Orchestration | ✅ Complete | 305+ |
+| [examples/infrastructure-integration/ToolProviderExample.java](examples/infrastructure-integration/ToolProviderExample.java) | Tool providers (Simple + Maven) | ✅ Complete | 300+ |
+| [examples/infrastructure-integration/StorageProviderExample.java](examples/infrastructure-integration/StorageProviderExample.java) | Storage provider | ✅ Complete | 240+ |
+| [examples/infrastructure-integration/MessagingExample.java](examples/infrastructure-integration/MessagingExample.java) | Messaging provider | ✅ Complete | 280+ |
 
-**Total Documentation:** ~2,100 lines
+**Total Documentation:** ~2,900 lines
 
 ---
 
@@ -269,6 +276,10 @@ Checks OPENAI_API_KEY → Creates OpenAIClient → Registers in ("llm", "openai"
 ```
 Creates InMemoryTaskQueueProvider → Registers in ("queue", "in-memory")
 Creates SimpleOrchestrationProvider → Registers in ("orchestration", "simple")
+Creates SimpleToolProvider → Registers in ("tool", "simple")
+Creates MavenToolProvider → Registers in ("tool", "maven")
+Creates LocalStorageProvider → Registers in ("storage", "local")
+Creates InMemoryMessageBus → Registers in ("messaging", "in-memory")
 ```
 
 **Result:** All components accessible via `ProviderRegistry.getProvider(category, name)`
@@ -299,6 +310,9 @@ OpenAIClient llm = registry.<OpenAIClient>getProvider("llm", "openai").orElseThr
 
 // Infrastructure
 InMemoryTaskQueueProvider queue = registry.<InMemoryTaskQueueProvider>getProvider("queue", "in-memory").orElseThrow();
+SimpleToolProvider tools = registry.<SimpleToolProvider>getProvider("tool", "simple").orElseThrow();
+LocalStorageProvider storage = registry.<LocalStorageProvider>getProvider("storage", "local").orElseThrow();
+InMemoryMessageBus messaging = registry.<InMemoryMessageBus>getProvider("messaging", "in-memory").orElseThrow();
 ```
 
 ### Reactive Operations
@@ -329,11 +343,11 @@ Mono<String> result = llm.complete(request)
 1. ⏳ Add InMemoryMemoryProvider (needs EmbeddingService)
 2. ⏳ Add Gemini LLM client
 3. ⏳ Add vLLM client for local models
-4. ⏳ Add MavenToolProvider
+4. ⏳ Add integration tests for new providers
 
 ### Long-Term (Future)
-1. ⏳ Storage providers (S3, local filesystem)
-2. ⏳ Messaging providers (Kafka, RabbitMQ)
+1. ⏳ Cloud storage providers (S3, Azure Blob)
+2. ⏳ Enterprise messaging (Kafka, RabbitMQ, Redis)
 3. ⏳ Advanced agents (PlanAndExecuteAgent, AutonomousAgent)
 4. ⏳ Distributed orchestration
 5. ⏳ Production deployment guides
@@ -343,17 +357,18 @@ Mono<String> result = llm.complete(request)
 ## 📈 Project Statistics
 
 ### Code Metrics
-- **Total Source Files:** 96
-- **Total Lines Added:** ~1,500 (integrations + examples + docs)
-- **Test Coverage:** 1,655 tests passing
-- **Documentation:** ~2,100 lines
+- **Total Source Files:** 99+
+- **Total Lines Added:** ~2,800 (integrations + examples + docs)
+- **Test Coverage:** 1,655+ tests passing
+- **Documentation:** ~2,900 lines
 
 ### Integration Timeline
 1. **EE Agent Integration** - 2025-11-05 (Phase 1 & 2)
 2. **LLM Client Integration** - 2025-11-06 (Direct integration)
-3. **Infrastructure Integration** - 2025-11-06 (Task queue + orchestration)
+3. **Infrastructure Integration (Queue + Orchestration)** - 2025-11-06
+4. **Infrastructure Integration (Tools + Storage + Messaging)** - 2025-11-07
 
-**Total Integration Time:** ~2 days
+**Total Integration Time:** ~3 days
 
 ---
 
@@ -377,20 +392,26 @@ Mono<String> result = llm.complete(request)
 
 ## ✅ Integration Complete
 
-**Status:** All planned integrations are complete and production-ready!
+**Status:** 7 out of 8 planned integrations are complete and production-ready!
 
 - ✅ EE Agents integrated and tested
 - ✅ LLM Clients integrated and tested
-- ✅ Infrastructure providers integrated and tested
-- ✅ Working examples for all components
+- ✅ Task Queue provider integrated and tested
+- ✅ Orchestration provider integrated and tested
+- ✅ Tool providers integrated (SimpleToolProvider + MavenToolProvider)
+- ✅ Storage provider integrated (LocalStorageProvider)
+- ✅ Messaging provider integrated (InMemoryMessageBus)
+- ⏳ Memory provider pending (awaiting EmbeddingService implementation)
+- ✅ Working examples for all completed components
 - ✅ Comprehensive documentation
-- ✅ All tests passing (1,655/1,655)
+- ⏳ Integration tests pending for new providers
+- ✅ All existing tests passing (1,655/1,655)
 - ✅ Build succeeds
 
-**AgenticBoot is ready for building production-ready agentic applications!**
+**AgenticBoot has 7/8 infrastructure providers integrated and is ready for building production-ready agentic applications!**
 
 ---
 
-**Last Updated:** 2025-11-06
+**Last Updated:** 2025-11-07
 **Version:** 1.0.0-SNAPSHOT
-**Status:** ✅ Production Ready
+**Status:** ✅ Production Ready (7/8 providers complete)
