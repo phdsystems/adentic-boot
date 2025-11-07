@@ -105,6 +105,28 @@
       <version>${adentic.version}</version>
     </dependency>
 
+    <!-- Adentic Utilities & Observability -->
+    <!-- Monitoring - Monitoring utilities and observability tools -->
+    <dependency>
+      <groupId>dev.adeengineer</groupId>
+      <artifactId>monitoring</artifactId>
+      <version>${adentic.version}</version>
+    </dependency>
+
+    <!-- Async - Asynchronous processing utilities -->
+    <dependency>
+      <groupId>dev.adeengineer</groupId>
+      <artifactId>async</artifactId>
+      <version>${adentic.version}</version>
+    </dependency>
+
+    <!-- Composition - Composition patterns and utilities -->
+    <dependency>
+      <groupId>dev.adeengineer</groupId>
+      <artifactId>composition</artifactId>
+      <version>${adentic.version}</version>
+    </dependency>
+
     <!-- Javalin - Lightweight HTTP server -->
     <dependency>
       <groupId>io.javalin</groupId>
