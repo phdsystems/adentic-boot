@@ -8,71 +8,20 @@
 
 ## Summary
 
-Successfully integrated **all 4 testing framework modules** from adentic-framework:
+Successfully integrated **2 testing framework modules** from adentic-framework:
 
-- ✅ **adentic-test** - Comprehensive test utilities, mocks, builders, assertions
-- ✅ **adentic-boot-test** - adentic-boot specific test helpers
 - ✅ **adentic-se-test** - Standard Edition testing utilities
 - ✅ **adentic-ee-test** - Enterprise Edition testing utilities
+
+**Modules Excluded:**
+- ❌ **adentic-test** - Removed from integration scope
+- ❌ **adentic-boot-test** - Removed from integration scope
 
 ---
 
 ## Modules Integrated
 
-### 1. adentic-test (1.0.0-SNAPSHOT)
-
-**Capabilities:**
-- Test utilities, mocks, builders, assertions
-- Base test classes for all modules
-- Framework-specific support:
-  - `BaseMicronautTest` - Micronaut test base class
-  - `BaseQuarkusTest` - Quarkus test base class
-- Test extensions:
-  - `AdenticTestExtension` - JUnit 5 extension for adentic components
-- Custom assertions:
-  - `TaskResultAssert` - Task result validation
-  - Agent/provider specific assertions
-- Test factories for common objects
-- Mock provider implementations
-
-**Package Structure:**
-```
-dev.adeengineer.adentic.test.micronaut.*
-dev.adeengineer.adentic.test.quarkus.*
-dev.adeengineer.adentic.test.extension.*
-dev.adeengineer.adentic.test.assertion.*
-dev.adeengineer.adentic.test.factory.*
-dev.adeengineer.adentic.test.base.*
-dev.adeengineer.adentic.test.builder.*
-dev.adeengineer.adentic.test.annotation.*
-dev.adeengineer.adentic.test.mock.*
-```
-
-**Dependencies:**
-- JUnit 5 (compile scope - for test utilities)
-- AssertJ (compile scope)
-- Mockito (compile scope)
-- Quarkus Test (optional)
-- Micronaut Test (optional)
-- Jakarta Inject (optional)
-
-### 2. adentic-boot-test (0.2.0-SNAPSHOT)
-
-**Capabilities:**
-- Testing utilities specific to adentic-boot
-- AgenticApplication test helpers
-- AgenticContext test builders
-- HTTP server test utilities
-- Component scanner test mocks
-- Provider registry test utilities
-
-**Expected Features:**
-- Boot application lifecycle management in tests
-- HTTP endpoint testing helpers
-- Dependency injection test utilities
-- Event system test helpers
-
-### 3. adentic-se-test (1.0.0-SNAPSHOT)
+### 1. adentic-se-test (1.0.0-SNAPSHOT)
 
 **Capabilities:**
 - Testing utilities for Standard Edition modules
@@ -80,7 +29,7 @@ dev.adeengineer.adentic.test.mock.*
 - Provider test utilities
 - Integration test support
 
-### 4. adentic-ee-test (1.0.0-SNAPSHOT)
+### 2. adentic-ee-test (1.0.0-SNAPSHOT)
 
 **Capabilities:**
 - Testing utilities for Enterprise Edition modules
@@ -105,18 +54,6 @@ dev.adeengineer.adentic.test.mock.*
 <!-- Adentic Testing Framework - Comprehensive test utilities, mocks, builders, assertions -->
 <dependency>
   <groupId>dev.adeengineer</groupId>
-  <artifactId>adentic-test</artifactId>
-  <version>${adentic.version}</version>
-  <scope>test</scope>
-</dependency>
-<dependency>
-  <groupId>dev.adeengineer</groupId>
-  <artifactId>adentic-boot-test</artifactId>
-  <version>0.2.0-SNAPSHOT</version>
-  <scope>test</scope>
-</dependency>
-<dependency>
-  <groupId>dev.adeengineer</groupId>
   <artifactId>adentic-se-test</artifactId>
   <version>${adentic.version}</version>
   <scope>test</scope>
@@ -131,8 +68,7 @@ dev.adeengineer.adentic.test.mock.*
 
 **Notes:**
 - All modules use `scope=test` (test-only dependencies)
-- `adentic-boot-test` uses version `0.2.0-SNAPSHOT` (older version)
-- Other modules use `${adentic.version}` (1.0.0-SNAPSHOT)
+- Both modules use `${adentic.version}` (1.0.0-SNAPSHOT)
 - Versions are explicit since these modules are not managed by adentic-ee-bom
 
 ---
@@ -163,7 +99,7 @@ mvn test
 
 ## Available Testing Utilities
 
-### From adentic-test
+### From adentic-se-test and adentic-ee-test
 
 #### Base Test Classes
 ```java
@@ -410,14 +346,13 @@ public class MyAgentTest extends BaseMicronautTest {
 - **Missing:** Adentic-specific test utilities
 
 ### After Testing Infrastructure Integration
-- **Coverage:** 12 out of 36 modules (33%) ✅
-- **Testing Support:** Full adentic testing framework
+- **Coverage:** 10 out of 36 modules (28%) ✅
+- **Testing Support:** SE and EE testing framework
 - **Benefits:**
-  - Standardized testing patterns
-  - Domain-specific assertions
-  - Mock providers for all components
-  - Base test classes for framework integration
-  - Test builders and factories
+  - SE and EE specific test utilities
+  - Provider test helpers
+  - Workflow pattern testing (Saga, Event Sourcing, CQRS)
+  - Integration test support
 
 ---
 
@@ -433,7 +368,7 @@ public class MyAgentTest extends BaseMicronautTest {
 5. **adentic-platform** - Multi-provider LLM abstraction
 
 **Expected Impact:**
-- Coverage: 33% → 47% (+5 modules)
+- Coverage: 28% → 36% (+3 modules)
 - Production-ready infrastructure
 - Standardized metrics collection
 - Docker infrastructure management
@@ -466,12 +401,13 @@ public class MyAgentTest extends BaseMicronautTest {
 
 ## Success Criteria Met ✅
 
-- [x] All 4 testing framework modules integrated
+- [x] 2 testing framework modules integrated (SE and EE)
 - [x] Dependencies resolved and compiled successfully
 - [x] Full test suite passing (1,668 tests)
 - [x] Build successful
 - [x] Documentation complete
-- [x] Coverage increased from 22% to 33%
+- [x] Coverage increased from 22% to 28%
+- [x] Removed adentic-test and adentic-boot-test per user request
 
 ---
 
