@@ -181,6 +181,9 @@ public final class AgenticApplication {
     // LLM Clients (from adentic-ai-client)
     registerLLMClients(providerRegistry);
 
+    // Infrastructure Providers (from adentic-core)
+    registerInfrastructureProviders(providerRegistry);
+
     // TODO: Add ConfigurationLoader
     // TODO: Add AsyncExecutor
   }
@@ -204,6 +207,33 @@ public final class AgenticApplication {
     }
 
     // TODO: Add Gemini, vLLM, Anthropic clients
+  }
+
+  /**
+   * Register infrastructure providers from adentic-core.
+   *
+   * <p>Creates and registers infrastructure providers for task queues, memory, and orchestration.
+   *
+   * @param registry provider registry
+   */
+  private static void registerInfrastructureProviders(final ProviderRegistry registry) {
+    // Task Queue Provider
+    dev.adeengineer.adentic.provider.queue.InMemoryTaskQueueProvider queueProvider =
+        dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
+            .createTaskQueueProvider();
+    registry.registerProvider("queue", "in-memory", queueProvider);
+    log.info("Registered InMemory task queue provider");
+
+    // Orchestration Provider
+    dev.adeengineer.adentic.provider.orchestration.SimpleOrchestrationProvider
+        orchestrationProvider =
+            dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
+                .createOrchestrationProvider();
+    registry.registerProvider("orchestration", "simple", orchestrationProvider);
+    log.info("Registered Simple orchestration provider");
+
+    // Memory Provider (note: requires EmbeddingService, will be added when available)
+    // TODO: Add InMemoryMemoryProvider when EmbeddingService is configured
   }
 
   /**
