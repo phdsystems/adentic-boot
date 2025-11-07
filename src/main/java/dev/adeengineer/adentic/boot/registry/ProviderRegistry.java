@@ -83,6 +83,10 @@ public class ProviderRegistry {
     providers.put("evaluation", new LinkedHashMap<>());
     // NEW: EE categories
     providers.put("agent", new LinkedHashMap<>());
+    // NEW: Enterprise integration categories
+    providers.put("resilience", new LinkedHashMap<>());
+    providers.put("health", new LinkedHashMap<>());
+    providers.put("metrics", new LinkedHashMap<>());
   }
 
   /**

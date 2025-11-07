@@ -78,6 +78,12 @@
       <artifactId>adentic-health</artifactId>
     </dependency>
 
+    <!-- Adentic Resilience4j - Circuit breakers, retry, bulkhead, rate limiting -->
+    <dependency>
+      <groupId>dev.adeengineer</groupId>
+      <artifactId>adentic-resilience4j</artifactId>
+    </dependency>
+
     <!-- Javalin - Lightweight HTTP server -->
     <dependency>
       <groupId>io.javalin</groupId>

@@ -184,6 +184,15 @@ public final class AgenticApplication {
     // Infrastructure Providers (from adentic-core)
     registerInfrastructureProviders(providerRegistry);
 
+    // Enterprise Messaging (Kafka, RabbitMQ)
+    registerMessagingProviders(providerRegistry);
+
+    // Observability (Metrics, Health Checks)
+    registerObservabilityProviders(providerRegistry);
+
+    // Resilience Patterns (Circuit Breakers, Retry)
+    registerResilienceProviders(providerRegistry);
+
     // TODO: Add ConfigurationLoader
     // TODO: Add AsyncExecutor
   }
@@ -200,13 +209,47 @@ public final class AgenticApplication {
     if (dev.adeengineer.adentic.boot.provider.LLMClientFactory.isOpenAIAvailable()) {
       dev.adeengineer.ai.openai.OpenAIClient openaiClient =
           dev.adeengineer.adentic.boot.provider.LLMClientFactory.createOpenAIClient();
-      registry.registerProvider("openai", "llm", openaiClient);
+      registry.registerProvider("llm", "openai", openaiClient);
       log.info("Registered OpenAI LLM client");
     } else {
       log.debug("OpenAI client not available (OPENAI_API_KEY not set)");
     }
 
-    // TODO: Add Gemini, vLLM, Anthropic clients
+    // Anthropic Claude client
+    if (dev.adeengineer.adentic.boot.provider.LLMClientFactory.isAnthropicAvailable()) {
+      dev.adeengineer.ai.anthropic.AnthropicClient anthropicClient =
+          dev.adeengineer.adentic.boot.provider.LLMClientFactory.createAnthropicClient();
+      registry.registerProvider("llm", "anthropic", anthropicClient);
+      log.info("Registered Anthropic Claude LLM client");
+    } else {
+      log.debug("Anthropic client not available (ANTHROPIC_API_KEY not set)");
+    }
+
+    // Google Gemini client
+    if (dev.adeengineer.adentic.boot.provider.LLMClientFactory.isGeminiAvailable()) {
+      dev.adeengineer.ai.gemini.GeminiClient geminiClient =
+          dev.adeengineer.adentic.boot.provider.LLMClientFactory.createGeminiClient();
+      registry.registerProvider("llm", "gemini", geminiClient);
+      log.info("Registered Google Gemini LLM client");
+    } else {
+      log.debug("Gemini client not available (GEMINI_API_KEY not set)");
+    }
+
+    // vLLM client
+    if (dev.adeengineer.adentic.boot.provider.LLMClientFactory.isVLLMAvailable()) {
+      dev.adeengineer.ai.runtime.vllm.VLLMClient vllmClient =
+          dev.adeengineer.adentic.boot.provider.LLMClientFactory.createVLLMClient();
+      registry.registerProvider("llm", "vllm", vllmClient);
+      log.info("Registered vLLM (self-hosted) LLM client");
+    } else {
+      log.debug("vLLM client not available (VLLM_BASE_URL not set)");
+    }
+
+    // Ollama client (always available with default localhost)
+    dev.adeengineer.ai.runtime.ollama.OllamaClient ollamaClient =
+        dev.adeengineer.adentic.boot.provider.LLMClientFactory.createOllamaClient();
+    registry.registerProvider("llm", "ollama", ollamaClient);
+    log.info("Registered Ollama (local) LLM client");
   }
 
   /**
@@ -364,6 +407,80 @@ public final class AgenticApplication {
     }
 
     return agentCount;
+  }
+
+  /**
+   * Register enterprise messaging providers (Kafka, RabbitMQ).
+   *
+   * @param registry provider registry
+   */
+  private static void registerMessagingProviders(final ProviderRegistry registry) {
+    // Kafka message broker
+    if (dev.adeengineer.adentic.boot.provider.MessagingProviderFactory.isKafkaAvailable()) {
+      dev.adeengineer.adentic.messaging.kafka.KafkaMessageBroker kafkaBroker =
+          dev.adeengineer.adentic.boot.provider.MessagingProviderFactory.createKafkaBroker();
+      registry.registerProvider("messaging", "kafka", kafkaBroker);
+      log.info("Registered Kafka message broker");
+    } else {
+      log.debug("Kafka broker not available (KAFKA_BOOTSTRAP_SERVERS not set)");
+    }
+
+    // RabbitMQ message broker
+    if (dev.adeengineer.adentic.boot.provider.MessagingProviderFactory.isRabbitMQAvailable()) {
+      dev.adeengineer.adentic.messaging.rabbitmq.RabbitMQMessageBroker rabbitmqBroker =
+          dev.adeengineer.adentic.boot.provider.MessagingProviderFactory.createRabbitMQBroker();
+      registry.registerProvider("messaging", "rabbitmq", rabbitmqBroker);
+      log.info("Registered RabbitMQ message broker");
+    } else {
+      log.debug("RabbitMQ broker not available (RABBITMQ_HOST not set)");
+    }
+  }
+
+  /**
+   * Register observability providers (metrics, health checks).
+   *
+   * @param registry provider registry
+   */
+  private static void registerObservabilityProviders(final ProviderRegistry registry) {
+    // Metrics collector
+    dev.adeengineer.adentic.observability.monitoring.MetricsCollector metricsCollector =
+        dev.adeengineer.adentic.boot.provider.ObservabilityProviderFactory.createMetricsCollector();
+    registry.registerProvider("metrics", "default", metricsCollector);
+    log.info("Registered default metrics collector");
+
+    // Health check service
+    dev.adeengineer.adentic.observability.monitoring.HealthCheckService healthService =
+        dev.adeengineer.adentic.boot.provider.ObservabilityProviderFactory
+            .createHealthCheckService();
+    registry.registerProvider("health", "default", healthService);
+    log.info("Registered health check service");
+
+    // Prometheus metrics provider (if enabled)
+    if (dev.adeengineer.adentic.boot.provider.ObservabilityProviderFactory
+        .isPrometheusAvailable()) {
+      dev.adeengineer.adentic.observability.providers.prometheus.PrometheusMetricsProvider
+          prometheusProvider =
+              dev.adeengineer.adentic.boot.provider.ObservabilityProviderFactory
+                  .createPrometheusProvider();
+      registry.registerProvider("prometheus", "metrics", prometheusProvider);
+      log.info("Registered Prometheus metrics provider");
+    } else {
+      log.debug("Prometheus not enabled (PROMETHEUS_ENABLED not true)");
+    }
+  }
+
+  /**
+   * Register resilience providers (circuit breakers, retry, bulkhead).
+   *
+   * @param registry provider registry
+   */
+  private static void registerResilienceProviders(final ProviderRegistry registry) {
+    // Resilience4j proxy factory
+    dev.adeengineer.resilience4j.Resilience4jProxyFactory resilienceFactory =
+        dev.adeengineer.adentic.boot.provider.ResilienceProviderFactory
+            .createResilienceProxyFactory();
+    registry.registerProvider("resilience", "resilience4j", resilienceFactory);
+    log.info("Registered Resilience4j proxy factory (circuit breaker, retry, bulkhead)");
   }
 
   /** Print startup banner. */
