@@ -84,6 +84,27 @@
       <artifactId>adentic-resilience4j</artifactId>
     </dependency>
 
+    <!-- Adentic Infrastructure Modules -->
+    <!-- Adentic Metrics - Zero-dependency metrics data structures (AgentMetrics, SystemMetrics) -->
+    <dependency>
+      <groupId>dev.adeengineer</groupId>
+      <artifactId>adentic-metrics</artifactId>
+    </dependency>
+
+    <!-- Adentic Commons - Cross-cutting concern annotations shared across SE and EE -->
+    <dependency>
+      <groupId>dev.adeengineer</groupId>
+      <artifactId>adentic-commons</artifactId>
+      <version>0.2.0-SNAPSHOT</version>
+    </dependency>
+
+    <!-- Adentic Infrastructure - Infrastructure management (Docker/TestContainers, annotation processing) -->
+    <dependency>
+      <groupId>dev.adeengineer</groupId>
+      <artifactId>adentic-infrastructure</artifactId>
+      <version>${adentic.version}</version>
+    </dependency>
+
     <!-- Javalin - Lightweight HTTP server -->
     <dependency>
       <groupId>io.javalin</groupId>
