@@ -86,9 +86,9 @@ Layer 4: adentic-boot (Framework Runtime)
 
 ```xml
 <dependency>
-    <groupId>dev.adeengineer</groupId>
+    <groupId>dev.engineeringlab</groupId>
     <artifactId>adentic-boot</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -96,6 +96,53 @@ Layer 4: adentic-boot (Framework Runtime)
 
 - **Java 21+**
 - **Maven 3.13+** or **Gradle 8+**
+
+---
+
+## 📦 Integrated Modules (dev.engineeringlab Ecosystem)
+
+AgenticBoot integrates **18+ enterprise-grade modules** from the EngineeringLab framework:
+
+### Core Framework Modules
+- **adentic-boot** - Application framework (DI, HTTP, events)
+- **adentic-ee-core** - Enterprise agents (SimpleAgent, ReActAgent, ChainOfThoughtAgent)
+- **adentic-ai-client** - Unified LLM clients (OpenAI, Anthropic, Gemini)
+- **adentic-health** - Health checks and liveness probes
+- **adentic-resilience4j** - Circuit breakers, retry, bulkhead, rate limiting
+
+### Infrastructure Modules (11 Documented Modules)
+
+| Module | Purpose | Error Range | Auto-Discovery |
+|--------|---------|-------------|----------------|
+| **cache** | Caching abstraction (Redis, Caffeine, etc.) | 20xxx | @CacheProvider |
+| **messaging** | Message brokers (Kafka, RabbitMQ, etc.) | 23xxx | @MessageBrokerProvider |
+| **storage** | Storage providers (S3, MinIO, local) | 24xxx | @StorageProvider |
+| **email** | Email services (SMTP, SendGrid, SES) | 25xxx | @EmailProvider |
+| **notification** | Multi-channel notifications (FCM, SNS, Twilio) | 26xxx | @NotificationProvider |
+| **codeexec** | Code execution (Docker, Lambda, GraalVM) | 27xxx | @CodeExecutionProvider |
+| **datasource** | Data source abstraction | 28xxx | @DatabaseProvider |
+| **scm** | Source control (GitHub, GitLab, Bitbucket) | 29xxx | @SCMProvider |
+| **vcs** | Version control (Git, JGit, SVN) | 30xxx | @VCSProvider |
+| **workflow** | Workflow orchestration (Temporal, Camunda) | 31xxx | @WorkflowProvider |
+| **llm-evaluation** | LLM evaluation framework | 32xxx | @EvaluationProvider |
+
+### Module Documentation
+
+Each module includes comprehensive documentation:
+- **Architecture diagrams** (C4, class diagrams)
+- **Data flow diagrams** (request/response flows)
+- **Sequence diagrams** (operation sequences)
+- **Developer guides** (quick start, examples, setup)
+
+Documentation available in `../adentic-framework/engineeringlab-{module}/doc/`
+
+### Exception Handling
+
+AgenticBoot provides enterprise-grade exception handling:
+- **Structured error codes** (10001-10999 range for boot, module-specific ranges)
+- **HTTP status mapping** (no Spring Web dependency required)
+- **Retry metadata** (intelligent retry decision support)
+- **Distributed tracing** (automatic trace/span ID generation)
 
 ---
 

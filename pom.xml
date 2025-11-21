@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0          http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>dev.adeengineer</groupId>
+  <groupId>dev.engineeringlab</groupId>
   <artifactId>adentic-boot</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
@@ -18,6 +18,7 @@
 
     <!-- Adentic BOMs -->
     <adentic.version>1.0.0-SNAPSHOT</adentic.version>
+    <engineeringlab.version>0.2.0-SNAPSHOT</engineeringlab.version>
 
     <!-- Dependency versions (not managed by BOMs) -->
     <javalin.version>6.1.3</javalin.version>
@@ -37,9 +38,9 @@
     <dependencies>
       <!-- Import Adentic EE BOM (which imports SE BOM) -->
       <dependency>
-        <groupId>dev.adeengineer.ee</groupId>
-        <artifactId>adentic-ee-bom</artifactId>
-        <version>${adentic.version}</version>
+        <groupId>dev.engineeringlab</groupId>
+        <artifactId>engineeringlab-ee-bom</artifactId>
+        <version>${engineeringlab.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -47,67 +48,73 @@
   </dependencyManagement>
 
   <dependencies>
-    <!-- Adentic Core - Managed by BOM -->
+    <!-- Adentic Core -->
     <dependency>
-      <groupId>dev.adeengineer</groupId>
+      <groupId>dev.engineeringlab</groupId>
       <artifactId>adentic-core</artifactId>
+      <version>${adentic.version}</version>
     </dependency>
 
-    <!-- Adentic Annotation - Managed by BOM -->
+    <!-- Adentic Annotation -->
     <dependency>
-      <groupId>dev.adeengineer</groupId>
+      <groupId>dev.engineeringlab</groupId>
       <artifactId>adentic-annotation</artifactId>
+      <version>${adentic.version}</version>
     </dependency>
 
     <!-- Adentic EE Core - Enterprise Edition agents and tools -->
     <dependency>
-      <groupId>dev.adeengineer.ee</groupId>
-      <artifactId>adentic-ee-core</artifactId>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>ee-core</artifactId>
+      <version>${engineeringlab.version}</version>
     </dependency>
 
     <!-- Adentic EE Observability - Enterprise observability, ITSM, compliance, audit -->
     <dependency>
-      <groupId>dev.adeengineer.ee</groupId>
-      <artifactId>adentic-ee-observability</artifactId>
-      <version>${adentic.version}</version>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>engineeringlab-ee-observability</artifactId>
+      <version>${engineeringlab.version}</version>
     </dependency>
 
     <!-- Adentic AI Client - Unified LLM client for OpenAI, Gemini, vLLM, etc. -->
     <dependency>
-      <groupId>dev.adeengineer</groupId>
+      <groupId>dev.engineeringlab</groupId>
       <artifactId>adentic-ai-client</artifactId>
       <version>1.0.0-SNAPSHOT</version>
     </dependency>
 
     <!-- Adentic Health - Official health check and liveness probe system -->
     <dependency>
-      <groupId>dev.adeengineer</groupId>
+      <groupId>dev.engineeringlab</groupId>
       <artifactId>adentic-health</artifactId>
+      <version>${adentic.version}</version>
     </dependency>
 
     <!-- Adentic Resilience4j - Circuit breakers, retry, bulkhead, rate limiting -->
     <dependency>
-      <groupId>dev.adeengineer</groupId>
+      <groupId>dev.engineeringlab</groupId>
       <artifactId>adentic-resilience4j</artifactId>
+      <version>${adentic.version}</version>
     </dependency>
 
     <!-- Adentic Infrastructure Modules -->
     <!-- Adentic Metrics - Zero-dependency metrics data structures (AgentMetrics, SystemMetrics) -->
     <dependency>
-      <groupId>dev.adeengineer</groupId>
+      <groupId>dev.engineeringlab</groupId>
       <artifactId>adentic-metrics</artifactId>
+      <version>${adentic.version}</version>
     </dependency>
 
     <!-- Adentic Commons - Cross-cutting concern annotations shared across SE and EE -->
     <dependency>
-      <groupId>dev.adeengineer</groupId>
+      <groupId>dev.engineeringlab</groupId>
       <artifactId>adentic-commons</artifactId>
       <version>0.2.0-SNAPSHOT</version>
     </dependency>
 
     <!-- Adentic Infrastructure - Infrastructure management (Docker/TestContainers, annotation processing) -->
     <dependency>
-      <groupId>dev.adeengineer</groupId>
+      <groupId>dev.engineeringlab</groupId>
       <artifactId>adentic-infrastructure</artifactId>
       <version>${adentic.version}</version>
     </dependency>
@@ -115,23 +122,101 @@
     <!-- Adentic Utilities & Observability -->
     <!-- Monitoring - Monitoring utilities and observability tools -->
     <dependency>
-      <groupId>dev.adeengineer</groupId>
+      <groupId>dev.engineeringlab</groupId>
       <artifactId>monitoring</artifactId>
       <version>${adentic.version}</version>
     </dependency>
 
     <!-- Async - Asynchronous processing utilities -->
     <dependency>
-      <groupId>dev.adeengineer</groupId>
+      <groupId>dev.engineeringlab</groupId>
       <artifactId>async</artifactId>
       <version>${adentic.version}</version>
     </dependency>
 
     <!-- Composition - Composition patterns and utilities -->
     <dependency>
-      <groupId>dev.adeengineer</groupId>
+      <groupId>dev.engineeringlab</groupId>
       <artifactId>composition</artifactId>
       <version>${adentic.version}</version>
+    </dependency>
+
+    <!-- Engineering Lab Framework Modules (11 newly documented modules) -->
+    <!-- Cache Module - Caching abstraction (Redis, Caffeine, Memcached, etc.) -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>cache</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+
+    <!-- Messaging Module - Message broker abstraction (Kafka, RabbitMQ, etc.) -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>messaging</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+
+    <!-- Storage Module - Storage provider abstraction (S3, MinIO, local, etc.) -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>storage</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+
+    <!-- Email Module - Email service abstraction -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>email</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+
+    <!-- Notification Module - Multi-channel notification abstraction -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>notification</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+
+    <!-- Code Execution Module - Code execution service -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>codeexec</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+
+    <!-- Data Source Module - Data source abstraction -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>datasource</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+
+    <!-- SCM Module - Source control management -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>scm</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+
+    <!-- VCS Module - Version control system -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>vcs</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+
+    <!-- Workflow Module - Workflow orchestration -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>workflow</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+
+    <!-- LLM Evaluation Module - LLM evaluation framework -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>llm-evaluation</artifactId>
+      <version>${engineeringlab.version}</version>
     </dependency>
 
     <!-- Javalin - Lightweight HTTP server -->

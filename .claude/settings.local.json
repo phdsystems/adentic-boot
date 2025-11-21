@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(paste:*)",
+      "Bash(find:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
