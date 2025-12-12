@@ -4,12 +4,11 @@ import dev.engineeringlab.adentic.boot.AgenticApplication;
 import dev.engineeringlab.adentic.boot.annotations.AgenticBootApplication;
 import dev.engineeringlab.adentic.boot.annotations.RestController;
 import dev.engineeringlab.adentic.boot.context.AgenticContext;
+import dev.engineeringlab.llm.LLM;
 import dev.engineeringlab.adentic.boot.registry.ProviderRegistry;
 import dev.engineeringlab.adentic.boot.web.annotations.GetMapping;
 import dev.engineeringlab.adentic.boot.web.annotations.PostMapping;
 import dev.engineeringlab.adentic.boot.web.annotations.RequestBody;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.engineeringlab.llm.llm.text.OpenAITextGenerationProvider;
 import dev.engineeringlab.llm.text.TextGenerationProvider;
 import dev.engineeringlab.llm.text.model.TextGenerationRequest;
 import dev.engineeringlab.llm.text.model.TextGenerationResponse;
@@ -18,13 +17,23 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
- * Example application demonstrating OpenAI LLM integration with AgenticBoot.
+ * Example application demonstrating LLM integration with AgenticBoot.
+ *
+ * <p>Uses the {@link LLM} facade for provider discovery and creation.
  *
  * <h2>Setup</h2>
  *
  * <pre>{@code
+ * # For OpenAI
  * export OPENAI_API_KEY="sk-..."
- * export OPENAI_MODEL="gpt-4-turbo-preview"  # Optional, defaults to gpt-4-turbo-preview
+ * export OPENAI_MODEL="gpt-4-turbo-preview"  # Optional
+ *
+ * # For Anthropic
+ * export ANTHROPIC_API_KEY="sk-ant-..."
+ * export ANTHROPIC_MODEL="claude-3-sonnet-20240229"  # Optional
+ *
+ * # For Ollama (local)
+ * export OLLAMA_MODEL="llama3.1"  # Optional, defaults to llama3.1
  * }</pre>
  *
  * <h2>Run</h2>
@@ -39,9 +48,13 @@ import reactor.core.publisher.Mono;
  * <pre>{@code
  * curl http://localhost:8080/api/health
  * curl http://localhost:8080/api/llm/status
+ * curl http://localhost:8080/api/llm/providers
  * curl -X POST http://localhost:8080/api/llm/chat \
  *   -H "Content-Type: application/json" \
  *   -d '{"message":"Hello"}'
+ * curl -X POST http://localhost:8080/api/llm/chat \
+ *   -H "Content-Type: application/json" \
+ *   -d '{"message":"Hello", "provider":"anthropic"}'
  * }</pre>
  */
 @AgenticBootApplication(port = 8080, scanBasePackages = "examples.llm.integration")
@@ -61,7 +74,6 @@ public class OpenAIExample {
   @RestController
   public static class LLMController {
 
-    private TextGenerationProvider llmProvider;
     private ProviderRegistry registry;
 
     private ProviderRegistry getRegistry() {
@@ -71,23 +83,30 @@ public class OpenAIExample {
       return registry;
     }
 
-    private TextGenerationProvider getProvider() {
-      if (llmProvider == null) {
-        String apiKey = System.getenv("OPENAI_API_KEY");
-        String model = System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4-turbo-preview");
+    private TextGenerationProvider getProvider(String providerName) {
+      if (providerName == null || providerName.isBlank()) {
+        providerName = "openai";
+      }
 
-        if (apiKey == null || apiKey.isEmpty()) {
-          throw new IllegalStateException("OPENAI_API_KEY not set");
-        }
-
-        llmProvider = new OpenAITextGenerationProvider(apiKey, model, new ObjectMapper());
-        log.info("Initialized LLM provider: OpenAI with model {}", model);
-
-        if (getRegistry() != null) {
-          getRegistry().registerProvider("llm", "openai", llmProvider);
+      // Check if already registered
+      if (getRegistry() != null) {
+        Object cached = getRegistry().getProvider("llm", providerName);
+        if (cached instanceof TextGenerationProvider provider) {
+          return provider;
         }
       }
-      return llmProvider;
+
+      // Get from facade
+      TextGenerationProvider provider = LLM.using(providerName).provider();
+      log.info("Initialized LLM provider: {} with model {}",
+          provider.getProviderName(), provider.getModel());
+
+      // Register for caching
+      if (getRegistry() != null) {
+        getRegistry().registerProvider("llm", providerName, provider);
+      }
+
+      return provider;
     }
 
     @GetMapping("/api/health")
@@ -95,10 +114,22 @@ public class OpenAIExample {
       return Map.of("status", "UP", "service", "llm-example");
     }
 
+    @GetMapping("/api/llm/providers")
+    public Map<String, Object> listProviders() {
+      return Map.of(
+          "available", java.util.List.of("openai", "anthropic", "ollama"),
+          "configured", Map.of(
+              "openai", System.getenv("OPENAI_API_KEY") != null,
+              "anthropic", System.getenv("ANTHROPIC_API_KEY") != null,
+              "ollama", true
+          )
+      );
+    }
+
     @GetMapping("/api/llm/status")
     public Map<String, Object> getStatus() {
       try {
-        TextGenerationProvider provider = getProvider();
+        TextGenerationProvider provider = getProvider("openai");
         return Map.of(
             "status", "UP",
             "provider", provider.getProviderName(),
@@ -112,39 +143,40 @@ public class OpenAIExample {
     @PostMapping("/api/llm/chat")
     public Mono<Map<String, Object>> chat(@RequestBody Map<String, Object> body) {
       String message = (String) body.getOrDefault("message", "Hello");
-      log.info("Chat request: {}", message);
+      String providerName = (String) body.getOrDefault("provider", "openai");
+      log.info("Chat request [{}]: {}", providerName, message);
 
-      return Mono.fromCallable(() -> getProvider())
-          .flatMap(
-              provider -> {
-                TextGenerationRequest request = TextGenerationRequest.simple(message);
-                return provider.generate(request);
-              })
-          .map(
-              response ->
-                  Map.<String, Object>of(
-                      "question", message,
-                      "answer", response.content(),
-                      "model", response.model()))
-          .onErrorResume(
-              error -> {
-                log.error("Chat error", error);
-                return Mono.just(Map.of("error", error.getMessage()));
-              });
+      return Mono.fromCallable(() -> getProvider(providerName))
+          .flatMap(provider -> {
+            TextGenerationRequest request = TextGenerationRequest.simple(message);
+            return provider.generate(request);
+          })
+          .map(response -> Map.<String, Object>of(
+              "question", message,
+              "answer", response.content(),
+              "model", response.model(),
+              "provider", providerName))
+          .onErrorResume(error -> {
+            log.error("Chat error", error);
+            return Mono.just(Map.of(
+                "error", error.getMessage(),
+                "provider", providerName));
+          });
     }
 
     @PostMapping("/api/llm/generate")
     public Mono<TextGenerationResponse> generate(@RequestBody Map<String, Object> params) {
       String prompt = (String) params.getOrDefault("prompt", "Hello");
-      log.info("Generate request: {}", prompt);
+      String providerName = (String) params.getOrDefault("provider", "openai");
+      log.info("Generate request [{}]: {}", providerName, prompt);
 
-      return Mono.fromCallable(() -> getProvider())
-          .flatMap(
-              provider -> {
-                TextGenerationRequest request =
-                    TextGenerationRequest.builder().prompt(prompt).build();
-                return provider.generate(request);
-              });
+      return Mono.fromCallable(() -> getProvider(providerName))
+          .flatMap(provider -> {
+            TextGenerationRequest request = TextGenerationRequest.builder()
+                .prompt(prompt)
+                .build();
+            return provider.generate(request);
+          });
     }
   }
 }

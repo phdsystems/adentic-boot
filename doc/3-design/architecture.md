@@ -751,6 +751,7 @@ openai:
 5. [Data Flow Diagrams](dataflow.md) - Data transformations
 6. [Workflow vs Data Flow Guide](../4-development/guide/workflow-vs-dataflow.md) - Understanding the difference
 7. [Dependency Management](dependency-management.md) - Version management strategy and best practices
+8. [Service Discovery System](service-discovery-system.md) - Generic provider annotation and auto-injection system
 
 ---
 

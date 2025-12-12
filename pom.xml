@@ -144,6 +144,18 @@
     <!-- ==================== -->
     <!-- EngineeringLab Modules -->
     <!-- ==================== -->
+    <!-- Annotations Core - Provider discovery (Providers class) -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>annotations-core</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- LLM Facade - LLM class for simplified access -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>llm</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
     <!-- LLM SPI - Provider interface -->
     <dependency>
       <groupId>dev.engineeringlab</groupId>
