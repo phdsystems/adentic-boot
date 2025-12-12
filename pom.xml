@@ -144,9 +144,22 @@
     <!-- ==================== -->
     <!-- EngineeringLab Modules -->
     <!-- ==================== -->
+    <!-- LLM SPI - Provider interface -->
     <dependency>
       <groupId>dev.engineeringlab</groupId>
-      <artifactId>llm</artifactId>
+      <artifactId>llm-spi</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- LLM API - Request/response models -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>llm-api</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- LLM Core - Provider implementations (OpenAI, Anthropic, etc.) -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>llm-core</artifactId>
       <version>${engineeringlab.version}</version>
     </dependency>
 

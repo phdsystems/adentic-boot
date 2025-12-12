@@ -1,6 +1,10 @@
 package dev.engineeringlab.adentic.boot.exception;
 
-import static dev.engineeringlab.adentic.boot.exception.HttpStatusCode.*;
+import static dev.engineeringlab.adentic.boot.exception.HttpStatusCode.BAD_REQUEST;
+import static dev.engineeringlab.adentic.boot.exception.HttpStatusCode.CONFLICT;
+import static dev.engineeringlab.adentic.boot.exception.HttpStatusCode.INTERNAL_SERVER_ERROR;
+import static dev.engineeringlab.adentic.boot.exception.HttpStatusCode.NOT_FOUND;
+import static dev.engineeringlab.adentic.boot.exception.HttpStatusCode.UNPROCESSABLE_ENTITY;
 
 /**
  * Error codes for AgenticBoot framework operations.
