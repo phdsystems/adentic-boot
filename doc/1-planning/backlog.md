@@ -125,12 +125,13 @@ Integration tests were removed during standalone migration due to missing Agent 
 **Description:**
 
 Provider factories were removed during standalone migration:
-- `LLMClientFactory.java`
-- `InfrastructureProviderFactory.java`
-- `MessagingProviderFactory.java`
-- `ObservabilityProviderFactory.java`
-- `RAGProviderFactory.java`
-- `ResilienceProviderFactory.java`
+- `LLMClientFactory.java` - OpenAI, Anthropic, Gemini, vLLM, Ollama clients
+- `InfrastructureProviderFactory.java` - Task queues, orchestration, storage, messaging
+- `MessagingProviderFactory.java` - Kafka, RabbitMQ brokers
+- `ObservabilityProviderFactory.java` - Metrics, health checks, Prometheus
+- `RAGProviderFactory.java` - Embedding service, memory providers
+- `ResilienceProviderFactory.java` - Resilience4j circuit breakers
+- `OpenAIEmbeddingService.java` - OpenAI embeddings implementation
 
 **Action:** Restore factories when external dependencies are available.
 
