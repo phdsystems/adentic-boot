@@ -16,8 +16,7 @@ public enum AgenticBootErrorCode implements ErrorCode {
   // ========== Configuration Errors (10001-10010) ==========
 
   /** Boot configuration is invalid or missing required parameters. */
-  BOOT_CONFIGURATION_INVALID(
-      "10001", "AgenticBoot configuration is invalid", BAD_REQUEST, false),
+  BOOT_CONFIGURATION_INVALID("10001", "AgenticBoot configuration is invalid", BAD_REQUEST, false),
 
   /** Boot initialization failed. */
   BOOT_INITIALIZATION_FAILED(
@@ -48,8 +47,7 @@ public enum AgenticBootErrorCode implements ErrorCode {
   // ========== Dependency Injection Errors (10021-10030) ==========
 
   /** Dependency injection failed. */
-  DEPENDENCY_INJECTION_FAILED(
-      "10021", "Dependency injection failed", INTERNAL_SERVER_ERROR, false),
+  DEPENDENCY_INJECTION_FAILED("10021", "Dependency injection failed", INTERNAL_SERVER_ERROR, false),
 
   /** Circular dependency detected. */
   CIRCULAR_DEPENDENCY("10022", "Circular dependency detected", INTERNAL_SERVER_ERROR, false),
@@ -65,8 +63,7 @@ public enum AgenticBootErrorCode implements ErrorCode {
   AMBIGUOUS_BEAN("10025", "Ambiguous bean definition", CONFLICT, false),
 
   /** Bean instantiation failed. */
-  BEAN_INSTANTIATION_FAILED(
-      "10026", "Bean instantiation failed", INTERNAL_SERVER_ERROR, false),
+  BEAN_INSTANTIATION_FAILED("10026", "Bean instantiation failed", INTERNAL_SERVER_ERROR, false),
 
   // ========== HTTP Server Errors (10031-10040) ==========
 
@@ -77,8 +74,7 @@ public enum AgenticBootErrorCode implements ErrorCode {
   SERVER_STOP_FAILED("10032", "HTTP server stop failed", INTERNAL_SERVER_ERROR, false),
 
   /** Route registration failed. */
-  ROUTE_REGISTRATION_FAILED(
-      "10033", "Route registration failed", INTERNAL_SERVER_ERROR, false),
+  ROUTE_REGISTRATION_FAILED("10033", "Route registration failed", INTERNAL_SERVER_ERROR, false),
 
   /** Port already in use. */
   PORT_IN_USE("10034", "Port already in use", CONFLICT, false),

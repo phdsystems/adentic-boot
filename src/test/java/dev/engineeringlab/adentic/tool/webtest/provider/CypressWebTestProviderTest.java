@@ -69,7 +69,7 @@ class CypressWebTestProviderTest {
     void shouldSupportChromiumBrowser() {
       // Cypress primarily supports Chrome-based browsers
       assertEquals(
-          dev.adeengineer.adentic.tool.webtest.model.BrowserType.CHROMIUM,
+          dev.engineeringlab.adentic.tool.webtest.model.BrowserType.CHROMIUM,
           provider.getConfig().getBrowser());
     }
 

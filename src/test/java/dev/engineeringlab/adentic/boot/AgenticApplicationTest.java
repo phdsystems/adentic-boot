@@ -228,7 +228,7 @@ class AgenticApplicationTest {
     try {
       context = AgenticApplication.run(MinimalTestApp.class);
 
-      // Should scan dev.adeengineer.adentic.boot package (where MinimalTestApp is located)
+      // Should scan dev.engineeringlab.adentic.boot package (where MinimalTestApp is located)
       assertThat(context).isNotNull();
       assertThat(context.containsBean(EventBus.class)).isTrue();
 
@@ -318,20 +318,20 @@ class AgenticApplicationTest {
 
   // Test Application Classes
 
-  @AgenticBootApplication(scanBasePackages = "dev.adeengineer.adentic.boot.test.minimal")
+  @AgenticBootApplication(scanBasePackages = "dev.engineeringlab.adentic.boot.test.minimal")
   static class MinimalTestApp {}
 
   @AgenticBootApplication(
       port = TEST_PORT,
-      scanBasePackages = "dev.adeengineer.adentic.boot.test.customport")
+      scanBasePackages = "dev.engineeringlab.adentic.boot.test.customport")
   static class CustomPortTestApp {}
 
-  @AgenticBootApplication(scanBasePackages = "dev.adeengineer.adentic.boot.test.customscan")
+  @AgenticBootApplication(scanBasePackages = "dev.engineeringlab.adentic.boot.test.customscan")
   static class CustomScanPackageTestApp {}
 
   static class NotAnnotatedApp {}
 
-  @AgenticBootApplication(scanBasePackages = "dev.adeengineer.adentic.boot.test.component")
+  @AgenticBootApplication(scanBasePackages = "dev.engineeringlab.adentic.boot.test.component")
   static class ComponentTestApp {}
 
   @Component
@@ -341,7 +341,7 @@ class AgenticApplicationTest {
     }
   }
 
-  @AgenticBootApplication(scanBasePackages = "dev.adeengineer.adentic.boot.test.dependency")
+  @AgenticBootApplication(scanBasePackages = "dev.engineeringlab.adentic.boot.test.dependency")
   static class DependencyTestApp {}
 
   @Component
@@ -360,7 +360,7 @@ class AgenticApplicationTest {
 
   @AgenticBootApplication(
       port = TEST_PORT,
-      scanBasePackages = "dev.adeengineer.adentic.boot.test.restcontroller")
+      scanBasePackages = "dev.engineeringlab.adentic.boot.test.restcontroller")
   static class RestControllerTestApp {}
 
   @RestController

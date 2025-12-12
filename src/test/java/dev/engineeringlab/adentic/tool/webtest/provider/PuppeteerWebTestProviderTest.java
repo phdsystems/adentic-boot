@@ -69,7 +69,7 @@ class PuppeteerWebTestProviderTest {
     void shouldSupportChromiumBrowserOnly() {
       // Puppeteer primarily supports Chromium
       assertEquals(
-          dev.adeengineer.adentic.tool.webtest.model.BrowserType.CHROMIUM,
+          dev.engineeringlab.adentic.tool.webtest.model.BrowserType.CHROMIUM,
           provider.getConfig().getBrowser());
     }
   }

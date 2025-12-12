@@ -32,7 +32,7 @@ class ComponentScannerTest {
 
   @BeforeEach
   void setUp() {
-    scanner = new ComponentScanner("dev.adeengineer.adentic.boot.scanner");
+    scanner = new ComponentScanner("dev.engineeringlab.adentic.boot.scanner");
   }
 
   @Test
@@ -156,7 +156,7 @@ class ComponentScannerTest {
   @Service
   static class TestService {}
 
-  @TextGenerationProvider(name = "openai", model = "gpt-4")
+  @TextGenerationProvider(name = "openai")
   static class TestOpenAIProvider {}
 
   @InfrastructureProvider(name = "docker")

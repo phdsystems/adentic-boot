@@ -372,7 +372,7 @@ class BaseWebTestProviderTest {
     }
 
     @Override
-    public Mono<dev.adeengineer.adentic.tool.webtest.model.Screenshot> takeScreenshot() {
+    public Mono<dev.engineeringlab.adentic.tool.webtest.model.Screenshot> takeScreenshot() {
       return Mono.empty();
     }
 
@@ -452,13 +452,13 @@ class BaseWebTestProviderTest {
     }
 
     @Override
-    public Mono<dev.adeengineer.adentic.tool.webtest.model.ElementInfo> getElementInfo(
+    public Mono<dev.engineeringlab.adentic.tool.webtest.model.ElementInfo> getElementInfo(
         String selector) {
       return Mono.empty();
     }
 
     @Override
-    public Mono<java.util.List<dev.adeengineer.adentic.tool.webtest.model.ElementInfo>>
+    public Mono<java.util.List<dev.engineeringlab.adentic.tool.webtest.model.ElementInfo>>
         findElements(String selector) {
       return Mono.empty();
     }
@@ -519,13 +519,13 @@ class BaseWebTestProviderTest {
     }
 
     @Override
-    public Mono<dev.adeengineer.adentic.tool.webtest.model.Screenshot> takeScreenshot(
+    public Mono<dev.engineeringlab.adentic.tool.webtest.model.Screenshot> takeScreenshot(
         String selector) {
       return Mono.empty();
     }
 
     @Override
-    public Mono<dev.adeengineer.adentic.tool.webtest.model.Screenshot> saveScreenshot(
+    public Mono<dev.engineeringlab.adentic.tool.webtest.model.Screenshot> saveScreenshot(
         String filePath) {
       return Mono.empty();
     }
@@ -541,7 +541,7 @@ class BaseWebTestProviderTest {
     }
 
     @Override
-    public Mono<dev.adeengineer.adentic.tool.webtest.model.PageState> getPageState() {
+    public Mono<dev.engineeringlab.adentic.tool.webtest.model.PageState> getPageState() {
       return Mono.empty();
     }
 

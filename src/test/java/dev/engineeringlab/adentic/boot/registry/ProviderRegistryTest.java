@@ -448,36 +448,36 @@ class ProviderRegistryTest {
 
   // Test provider classes
 
-  @LLM(name = "openai", type = "text-generation")
+  @LLM(name = "openai")
   static class TestOpenAIProvider {}
 
-  @LLM(name = "anthropic", type = "text-generation")
+  @LLM(name = "anthropic")
   static class TestAnthropicProvider {}
 
-  @dev.adeengineer.adentic.boot.annotations.provider.Messaging(name = "kafka", type = "distributed")
+  @dev.engineeringlab.adentic.boot.annotations.provider.Messaging(name = "kafka")
   static class TestKafkaProvider {}
 
-  @dev.adeengineer.adentic.boot.annotations.provider.Queue(name = "redis", type = "distributed")
+  @dev.engineeringlab.adentic.boot.annotations.provider.Queue(name = "redis")
   static class TestRedisQueueProvider {}
 
-  @dev.adeengineer.adentic.boot.annotations.provider.Messaging
+  @dev.engineeringlab.adentic.boot.annotations.provider.Messaging
   static class TestProviderWithoutName {}
 
-  @dev.adeengineer.adentic.boot.annotations.provider.Infrastructure(name = "testInfra")
+  @dev.engineeringlab.adentic.boot.annotations.provider.Infrastructure(name = "testInfra")
   static class TestInfrastructureProvider {}
 
-  @dev.adeengineer.adentic.boot.annotations.provider.Storage(name = "testStorage")
+  @dev.engineeringlab.adentic.boot.annotations.provider.Storage(name = "testStorage")
   static class TestStorageProvider {}
 
-  @dev.adeengineer.adentic.boot.annotations.provider.Orchestration(name = "testOrch")
+  @dev.engineeringlab.adentic.boot.annotations.provider.Orchestration(name = "testOrch")
   static class TestOrchestrationProvider {}
 
-  @dev.adeengineer.adentic.boot.annotations.provider.Memory(name = "testMemory")
+  @dev.engineeringlab.adentic.boot.annotations.provider.Memory(name = "testMemory")
   static class TestMemoryProvider {}
 
-  @dev.adeengineer.adentic.boot.annotations.provider.Tool(name = "testTool")
+  @dev.engineeringlab.adentic.boot.annotations.provider.Tool(name = "testTool")
   static class TestToolProvider {}
 
-  @dev.adeengineer.adentic.boot.annotations.provider.Evaluation(name = "testEval")
+  @dev.engineeringlab.adentic.boot.annotations.provider.Evaluation(name = "testEval")
   static class TestEvaluationProvider {}
 }

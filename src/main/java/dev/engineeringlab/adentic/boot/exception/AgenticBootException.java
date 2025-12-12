@@ -182,11 +182,6 @@ public class AgenticBootException extends RuntimeException {
   public String toString() {
     return String.format(
         "%s: %s [traceId=%s, spanId=%s, httpStatus=%d, retryable=%s]",
-        getClass().getSimpleName(),
-        getMessage(),
-        traceId,
-        spanId,
-        getHttpStatus(),
-        isRetryable());
+        getClass().getSimpleName(), getMessage(), traceId, spanId, getHttpStatus(), isRetryable());
   }
 }

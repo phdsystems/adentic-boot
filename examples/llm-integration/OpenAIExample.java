@@ -1,48 +1,53 @@
 package examples.llm.integration;
 
-import dev.adeengineer.adentic.boot.AgenticApplication;
-import dev.adeengineer.adentic.boot.annotations.AgenticBootApplication;
-import dev.adeengineer.adentic.boot.annotations.GetMapping;
-import dev.adeengineer.adentic.boot.annotations.PostMapping;
-import dev.adeengineer.adentic.boot.annotations.RequestBody;
-import dev.adeengineer.adentic.boot.annotations.RequestParam;
-import dev.adeengineer.adentic.boot.annotations.RestController;
-import dev.adeengineer.adentic.boot.registry.ProviderRegistry;
-import dev.adeengineer.ai.model.CompletionRequest;
-import dev.adeengineer.ai.model.CompletionResult;
-import dev.adeengineer.ai.model.common.Message;
-import dev.adeengineer.ai.model.common.Role;
-import dev.adeengineer.ai.openai.OpenAIClient;
+import dev.engineeringlab.adentic.boot.AgenticApplication;
+import dev.engineeringlab.adentic.boot.annotations.AgenticBootApplication;
+import dev.engineeringlab.adentic.boot.annotations.RestController;
+import dev.engineeringlab.adentic.boot.registry.ProviderRegistry;
+import dev.engineeringlab.adentic.boot.web.annotations.GetMapping;
+import dev.engineeringlab.adentic.boot.web.annotations.PostMapping;
+import dev.engineeringlab.adentic.boot.web.annotations.RequestBody;
+import dev.engineeringlab.adentic.boot.web.annotations.RequestParam;
+import dev.engineeringlab.llm.provider.OpenAICompatibleTextGenerationProvider;
+import dev.engineeringlab.llm.text.TextGenerationProvider;
+import dev.engineeringlab.llm.text.model.TextGenerationRequest;
+import dev.engineeringlab.llm.text.model.TextGenerationResponse;
 import jakarta.inject.Inject;
-import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
- * Example application demonstrating OpenAI integration with AgenticBoot using adentic-ai-client.
+ * Example application demonstrating LLM integration with AgenticBoot.
  *
  * <p>This example shows:
  *
  * <ul>
- *   <li>Direct use of OpenAIClient from adentic-ai-client
- *   <li>Auto-registration of LLM clients in ProviderRegistry
- *   <li>REST endpoints for chat completions
+ *   <li>TextGenerationProvider from engineeringlab-llm module
+ *   <li>OpenAI-compatible API (works with OpenAI, Ollama, vLLM, etc.)
+ *   <li>REST endpoints for text generation
  *   <li>Reactive responses with Project Reactor
- *   <li>Metrics and health checks built-in
  * </ul>
  *
  * <h2>Setup</h2>
  *
- * <p>Set environment variable:
+ * <p>Set environment variables:
  *
  * <pre>{@code
+ * # For OpenAI
  * export OPENAI_API_KEY="sk-..."
+ * export OPENAI_BASE_URL="https://api.openai.com/v1"  # optional
+ * export OPENAI_MODEL="gpt-4"  # optional
+ *
+ * # For Ollama (local)
+ * export OPENAI_BASE_URL="http://localhost:11434/v1"
+ * export OPENAI_MODEL="llama3.1"
  * }</pre>
  *
  * <h2>Run</h2>
  *
  * <pre>{@code
+ * cd adentic-boot
  * mvn exec:java -Dexec.mainClass="examples.llm.integration.OpenAIExample"
  * }</pre>
  *
@@ -55,10 +60,10 @@ import reactor.core.publisher.Mono;
  * # Simple chat
  * curl "http://localhost:8080/api/llm/chat?message=What%20is%202+2?"
  *
- * # Full completion
- * curl -X POST http://localhost:8080/api/llm/complete \
+ * # Full generation
+ * curl -X POST http://localhost:8080/api/llm/generate \
  *   -H "Content-Type: application/json" \
- *   -d '{"messages":[{"role":"user","content":"Explain AI"}]}'
+ *   -d '{"prompt":"Explain AI in one sentence"}'
  * }</pre>
  */
 @AgenticBootApplication(port = 8080, scanBasePackages = "examples.llm.integration")
@@ -68,41 +73,59 @@ public class OpenAIExample {
     AgenticApplication.run(OpenAIExample.class, args);
   }
 
-  /**
-   * REST controller for LLM interactions using OpenAIClient directly.
-   */
+  /** REST controller for LLM interactions. */
   @Slf4j
   @RestController
   public static class LLMController {
 
     @Inject private ProviderRegistry registry;
 
+    private TextGenerationProvider llmProvider;
+
+    /** Initialize the LLM provider on first request. */
+    private TextGenerationProvider getProvider() {
+      if (llmProvider == null) {
+        String apiKey = System.getenv("OPENAI_API_KEY");
+        String baseUrl =
+            System.getenv().getOrDefault("OPENAI_BASE_URL", "https://api.openai.com/v1");
+        String model = System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4");
+
+        if (apiKey == null || apiKey.isEmpty()) {
+          throw new IllegalStateException(
+              "OPENAI_API_KEY environment variable not set. "
+                  + "Set it to use OpenAI, or set OPENAI_BASE_URL for Ollama/vLLM.");
+        }
+
+        llmProvider = new OpenAICompatibleTextGenerationProvider(apiKey, baseUrl, model);
+        log.info("Initialized LLM provider: {} with model {}", baseUrl, model);
+
+        // Register in ProviderRegistry
+        registry.registerProvider("llm", "openai", llmProvider);
+      }
+      return llmProvider;
+    }
+
     /**
      * Get LLM provider status.
      *
      * <p>Example: {@code curl http://localhost:8080/api/llm/status}
-     *
-     * @return status information
      */
     @GetMapping("/api/llm/status")
     public Mono<Map<String, Object>> getStatus() {
       return Mono.fromCallable(
           () -> {
-            var clientOpt = registry.<OpenAIClient>getProvider("openai", "llm");
-
-            if (clientOpt.isEmpty()) {
+            try {
+              TextGenerationProvider provider = getProvider();
               return Map.of(
-                  "status", "DOWN",
-                  "message", "OpenAI client not available (OPENAI_API_KEY not set)");
+                  "status", "UP",
+                  "provider", provider.getProviderName(),
+                  "model", provider.getModel(),
+                  "healthy", provider.isHealthy(),
+                  "supportsStreaming", provider.supportsStreaming());
+            } catch (Exception e) {
+              return Map.of(
+                  "status", "DOWN", "error", e.getMessage(), "hint", "Set OPENAI_API_KEY env var");
             }
-
-            OpenAIClient client = clientOpt.get();
-            return Map.of(
-                "status", "UP",
-                "provider", "openai",
-                "type", "llm",
-                "connected", client.isConnected(),
-                "message", "OpenAI client ready");
           });
     }
 
@@ -110,83 +133,78 @@ public class OpenAIExample {
      * Simple chat endpoint.
      *
      * <p>Example: {@code curl "http://localhost:8080/api/llm/chat?message=What is 2+2?"}
-     *
-     * @param message user message
-     * @return AI response
      */
     @GetMapping("/api/llm/chat")
     public Mono<Map<String, Object>> chat(@RequestParam("message") String message) {
       log.info("Chat request: {}", message);
 
-      return getClient()
-          .flatMap(client -> client.connect())
+      return Mono.fromCallable(() -> getProvider())
           .flatMap(
-              _ -> {
-                OpenAIClient client = getClient().block();
-                CompletionRequest request =
-                    CompletionRequest.builder()
-                        .messages(List.of(Message.of(Role.USER, message)))
-                        .build();
-
-                return client.complete(request);
+              provider -> {
+                TextGenerationRequest request = TextGenerationRequest.simple(message);
+                return provider.generate(request);
               })
           .map(
-              result ->
+              response ->
                   Map.of(
                       "question", message,
-                      "answer", result.getContent(),
-                      "model", result.getModel(),
-                      "tokens", result.getTotalTokens()))
+                      "answer", response.content(),
+                      "model", response.model(),
+                      "tokens",
+                          response.usage() != null ? response.usage().totalTokens() : 0,
+                      "finishReason",
+                          response.finishReason() != null
+                              ? response.finishReason().name()
+                              : "unknown"))
           .onErrorResume(
               error -> {
                 log.error("Chat error", error);
-                return Mono.just(
-                    Map.of(
-                        "error", error.getMessage(),
-                        "message", "Failed to get response from OpenAI"));
+                return Mono.just(Map.of("error", error.getMessage(), "question", message));
               });
     }
 
     /**
-     * Full completion endpoint.
+     * Full generation endpoint with custom parameters.
      *
      * <p>Example:
      *
      * <pre>{@code
-     * curl -X POST http://localhost:8080/api/llm/complete \
+     * curl -X POST http://localhost:8080/api/llm/generate \
      *   -H "Content-Type: application/json" \
-     *   -d '{"messages":[{"role":"user","content":"What is AI?"}]}'
+     *   -d '{"prompt":"What is AI?","temperature":0.7,"maxTokens":100}'
      * }</pre>
-     *
-     * @param request completion request
-     * @return completion result
      */
-    @PostMapping("/api/llm/complete")
-    public Mono<CompletionResult> complete(@RequestBody CompletionRequest request) {
-      log.info("Completion request: {} messages", request.getMessages().size());
+    @PostMapping("/api/llm/generate")
+    public Mono<TextGenerationResponse> generate(@RequestBody Map<String, Object> params) {
+      String prompt = (String) params.getOrDefault("prompt", "Hello");
+      Double temperature = params.containsKey("temperature")
+          ? ((Number) params.get("temperature")).doubleValue()
+          : 0.7;
+      Integer maxTokens = params.containsKey("maxTokens")
+          ? ((Number) params.get("maxTokens")).intValue()
+          : 500;
 
-      return getClient()
-          .flatMap(client -> client.connect())
+      log.info("Generation request: prompt='{}', temp={}, maxTokens={}", prompt, temperature, maxTokens);
+
+      return Mono.fromCallable(() -> getProvider())
           .flatMap(
-              _ -> {
-                OpenAIClient client = getClient().block();
-                return client.complete(request);
+              provider -> {
+                TextGenerationRequest request =
+                    TextGenerationRequest.builder()
+                        .prompt(prompt)
+                        .temperature(temperature)
+                        .maxTokens(maxTokens)
+                        .build();
+                return provider.generate(request);
               })
-          .doOnSuccess(result -> log.info("Completion: {} tokens", result.getTotalTokens()))
-          .doOnError(error -> log.error("Completion error", error));
+          .doOnSuccess(r -> log.info("Generated {} tokens", r.usage() != null ? r.usage().totalTokens() : 0))
+          .doOnError(e -> log.error("Generation error", e));
     }
 
-    /**
-     * Get OpenAI client from registry.
-     *
-     * @return OpenAI client
-     */
-    private Mono<OpenAIClient> getClient() {
-      return Mono.fromCallable(
-          () ->
-              registry
-                  .<OpenAIClient>getProvider("openai", "llm")
-                  .orElseThrow(() -> new IllegalStateException("OpenAI client not available")));
+    /** Health check endpoint. */
+    @GetMapping("/api/health")
+    public Mono<Map<String, String>> health() {
+      return Mono.just(Map.of("status", "UP", "service", "llm-example"));
     }
   }
 }

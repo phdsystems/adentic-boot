@@ -286,5 +286,5 @@ public interface DatabaseProvider {
    *
    * @return Database type (SQL, NOSQL, etc.)
    */
-  dev.adeengineer.adentic.tool.database.model.DatabaseType getDatabaseType();
+  dev.engineeringlab.adentic.tool.database.model.DatabaseType getDatabaseType();
 }

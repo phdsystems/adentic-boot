@@ -450,7 +450,7 @@ class PostgreSQLDatabaseProviderTest {
       // Given
       DatabaseConfig config =
           DatabaseConfig.builder()
-              .provider(dev.adeengineer.adentic.tool.database.model.DatabaseProvider.POSTGRESQL)
+              .provider(dev.engineeringlab.adentic.tool.database.model.DatabaseProvider.POSTGRESQL)
               .enableQueryLogging(true)
               .build();
       PostgreSQLDatabaseProvider pgProvider = new PostgreSQLDatabaseProvider(config);

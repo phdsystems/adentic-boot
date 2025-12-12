@@ -1,10 +1,12 @@
 package dev.engineeringlab.adentic.boot;
 
 import dev.engineeringlab.adentic.boot.annotations.AgenticBootApplication;
+import dev.engineeringlab.adentic.boot.annotations.RestController;
 import dev.engineeringlab.adentic.boot.context.AgenticContext;
 import dev.engineeringlab.adentic.boot.event.EventBus;
 import dev.engineeringlab.adentic.boot.registry.ProviderRegistry;
 import dev.engineeringlab.adentic.boot.scanner.ComponentScanner;
+import dev.engineeringlab.adentic.boot.web.AgenticServer;
 import dev.engineeringlab.agent.Agent;
 import dev.engineeringlab.ee.llm.tools.SimpleToolRegistry;
 import dev.engineeringlab.ee.llm.tools.ToolRegistry;
@@ -118,11 +120,9 @@ public final class AgenticApplication {
     int totalAgents = registerEEAgents(context, scanner, providerRegistry);
 
     // 8. Register REST controllers with HTTP server
-    dev.adeengineer.adentic.boot.web.AgenticServer server =
-        context.getBean(dev.adeengineer.adentic.boot.web.AgenticServer.class);
+    AgenticServer server = context.getBean(AgenticServer.class);
     for (Class<?> component : components) {
-      if (component.isAnnotationPresent(
-          dev.adeengineer.adentic.boot.annotations.RestController.class)) {
+      if (component.isAnnotationPresent(RestController.class)) {
         Object controller = context.getBean(component);
         server.registerController(controller);
       }
@@ -173,174 +173,14 @@ public final class AgenticApplication {
     log.debug("Registered core bean: ToolRegistry");
 
     // AgenticServer
-    dev.adeengineer.adentic.boot.web.AgenticServer server =
-        new dev.adeengineer.adentic.boot.web.AgenticServer();
-    context.registerSingleton(dev.adeengineer.adentic.boot.web.AgenticServer.class, server);
+    AgenticServer server = new AgenticServer();
+    context.registerSingleton(AgenticServer.class, server);
     log.debug("Registered core bean: AgenticServer");
 
-    // LLM Clients (from adentic-ai-client)
-    registerLLMClients(providerRegistry);
-
-    // Infrastructure Providers (from adentic-core)
-    registerInfrastructureProviders(providerRegistry);
-
-    // Enterprise Messaging (Kafka, RabbitMQ)
-    registerMessagingProviders(providerRegistry);
-
-    // Observability (Metrics, Health Checks)
-    registerObservabilityProviders(providerRegistry);
-
-    // Resilience Patterns (Circuit Breakers, Retry)
-    registerResilienceProviders(providerRegistry);
-
-    // TODO: Add ConfigurationLoader
-    // TODO: Add AsyncExecutor
-  }
-
-  /**
-   * Register LLM clients from adentic-ai-client.
-   *
-   * <p>Creates and registers OpenAI, Gemini, and other LLM clients with environment configuration.
-   *
-   * @param registry provider registry
-   */
-  private static void registerLLMClients(final ProviderRegistry registry) {
-    // OpenAI client
-    if (dev.adeengineer.adentic.boot.provider.LLMClientFactory.isOpenAIAvailable()) {
-      dev.adeengineer.ai.openai.OpenAIClient openaiClient =
-          dev.adeengineer.adentic.boot.provider.LLMClientFactory.createOpenAIClient();
-      registry.registerProvider("llm", "openai", openaiClient);
-      log.info("Registered OpenAI LLM client");
-    } else {
-      log.debug("OpenAI client not available (OPENAI_API_KEY not set)");
-    }
-
-    // Anthropic Claude client
-    if (dev.adeengineer.adentic.boot.provider.LLMClientFactory.isAnthropicAvailable()) {
-      dev.adeengineer.ai.anthropic.AnthropicClient anthropicClient =
-          dev.adeengineer.adentic.boot.provider.LLMClientFactory.createAnthropicClient();
-      registry.registerProvider("llm", "anthropic", anthropicClient);
-      log.info("Registered Anthropic Claude LLM client");
-    } else {
-      log.debug("Anthropic client not available (ANTHROPIC_API_KEY not set)");
-    }
-
-    // Google Gemini client
-    if (dev.adeengineer.adentic.boot.provider.LLMClientFactory.isGeminiAvailable()) {
-      dev.adeengineer.ai.gemini.GeminiClient geminiClient =
-          dev.adeengineer.adentic.boot.provider.LLMClientFactory.createGeminiClient();
-      registry.registerProvider("llm", "gemini", geminiClient);
-      log.info("Registered Google Gemini LLM client");
-    } else {
-      log.debug("Gemini client not available (GEMINI_API_KEY not set)");
-    }
-
-    // vLLM client
-    if (dev.adeengineer.adentic.boot.provider.LLMClientFactory.isVLLMAvailable()) {
-      dev.adeengineer.ai.runtime.vllm.VLLMClient vllmClient =
-          dev.adeengineer.adentic.boot.provider.LLMClientFactory.createVLLMClient();
-      registry.registerProvider("llm", "vllm", vllmClient);
-      log.info("Registered vLLM (self-hosted) LLM client");
-    } else {
-      log.debug("vLLM client not available (VLLM_BASE_URL not set)");
-    }
-
-    // Ollama client (always available with default localhost)
-    dev.adeengineer.ai.runtime.ollama.OllamaClient ollamaClient =
-        dev.adeengineer.adentic.boot.provider.LLMClientFactory.createOllamaClient();
-    registry.registerProvider("llm", "ollama", ollamaClient);
-    log.info("Registered Ollama (local) LLM client");
-  }
-
-  /**
-   * Register infrastructure providers from adentic-core.
-   *
-   * <p>Creates and registers infrastructure providers for task queues, orchestration, tools,
-   * storage, messaging, and memory.
-   *
-   * @param registry provider registry
-   */
-  private static void registerInfrastructureProviders(final ProviderRegistry registry) {
-    // Task Queue Provider
-    dev.adeengineer.adentic.provider.queue.InMemoryTaskQueueProvider queueProvider =
-        dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
-            .createTaskQueueProvider();
-    registry.registerProvider("queue", "in-memory", queueProvider);
-    log.info("Registered InMemory task queue provider");
-
-    // Orchestration Provider
-    dev.adeengineer.adentic.provider.orchestration.SimpleOrchestrationProvider
-        orchestrationProvider =
-            dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
-                .createOrchestrationProvider();
-    registry.registerProvider("orchestration", "simple", orchestrationProvider);
-    log.info("Registered Simple orchestration provider");
-
-    // Tool Providers
-    dev.adeengineer.adentic.provider.tools.SimpleToolProvider simpleToolProvider =
-        dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
-            .createSimpleToolProvider();
-    registry.registerProvider("tool", "simple", simpleToolProvider);
-    log.info("Registered Simple tool provider");
-
-    dev.adeengineer.adentic.tool.config.MavenToolConfig mavenConfig =
-        dev.adeengineer.adentic.tool.config.MavenToolConfig.builder()
-            .workingDirectory(System.getProperty("user.dir"))
-            .timeoutSeconds(300)
-            .autoInstallWrapper(true)
-            .build();
-    dev.adeengineer.adentic.provider.tools.MavenToolProvider mavenToolProvider =
-        dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory.createMavenToolProvider(
-            mavenConfig);
-    registry.registerProvider("tool", "maven", mavenToolProvider);
-    log.info("Registered Maven tool provider");
-
-    // Storage Provider
-    try {
-      String storagePath = System.getProperty("adentic.storage.path", "./data/storage");
-      com.fasterxml.jackson.databind.ObjectMapper objectMapper =
-          new com.fasterxml.jackson.databind.ObjectMapper();
-      dev.adeengineer.adentic.storage.local.LocalStorageProvider storageProvider =
-          dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
-              .createLocalStorageProvider(storagePath, objectMapper);
-      registry.registerProvider("storage", "local", storageProvider);
-      log.info("Registered Local storage provider");
-    } catch (Exception e) {
-      log.error("Failed to register Local storage provider: {}", e.getMessage(), e);
-    }
-
-    // Messaging Provider
-    dev.adeengineer.adentic.agent.coordination.InMemoryMessageBus messageBus =
-        dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory.createMessageBus();
-    registry.registerProvider("messaging", "in-memory", messageBus);
-    log.info("Registered InMemory message bus");
-
-    // Memory Provider (requires EmbeddingService)
-    try {
-      String embeddingApiKey =
-          System.getProperty("openai.api.key", System.getenv("OPENAI_API_KEY"));
-      if (embeddingApiKey != null && !embeddingApiKey.isBlank()) {
-        String embeddingModel =
-            System.getProperty("openai.embedding.model", "text-embedding-3-small");
-        com.fasterxml.jackson.databind.ObjectMapper objectMapper =
-            new com.fasterxml.jackson.databind.ObjectMapper();
-
-        dev.adeengineer.rag.embedding.EmbeddingService embeddingService =
-            dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
-                .createOpenAIEmbeddingService(embeddingApiKey, embeddingModel, objectMapper);
-
-        dev.adeengineer.adentic.provider.memory.InMemoryMemoryProvider memoryProvider =
-            dev.adeengineer.adentic.boot.provider.InfrastructureProviderFactory
-                .createMemoryProvider(embeddingService);
-
-        registry.registerProvider("memory", "in-memory", memoryProvider);
-        log.info("Registered InMemory memory provider with OpenAI embeddings");
-      } else {
-        log.info("Memory provider not registered - OPENAI_API_KEY not configured");
-      }
-    } catch (Exception e) {
-      log.error("Failed to register InMemory memory provider: {}", e.getMessage(), e);
-    }
+    // Note: LLM clients, infrastructure providers, messaging providers,
+    // observability providers, and resilience providers are disabled in standalone mode.
+    // They will be re-enabled when the external dependencies are available.
+    log.info("Running in standalone mode - external providers disabled");
   }
 
   /**
@@ -352,7 +192,6 @@ public final class AgenticApplication {
    *   <li>Scans for classes implementing {@link Agent} interface
    *   <li>Instantiates each agent (if not already in context)
    *   <li>Registers agents in {@link ProviderRegistry} under "agent" category
-   *   <li>Publishes agent lifecycle events to {@link EventBus}
    * </ol>
    *
    * @param context the application context
@@ -371,7 +210,6 @@ public final class AgenticApplication {
       return 0;
     }
 
-    // EventBus eventBus = context.getBean(EventBus.class); // TODO: Enable when event classes added
     int agentCount = 0;
 
     for (Class<?> agentClass : agentClasses) {
@@ -393,9 +231,6 @@ public final class AgenticApplication {
         providerRegistry.registerAgent(agentName, agent);
         log.debug("Registered EE agent: {} ({})", agentName, agentClass.getSimpleName());
 
-        // TODO: Publish agent registered event to EventBus (requires AgentRegisteredEvent class)
-        // eventBus.publish(new AgentRegisteredEvent(agent));
-
         agentCount++;
       } catch (Exception e) {
         log.warn("Failed to register agent: {}", agentClass.getName(), e);
@@ -407,80 +242,6 @@ public final class AgenticApplication {
     }
 
     return agentCount;
-  }
-
-  /**
-   * Register enterprise messaging providers (Kafka, RabbitMQ).
-   *
-   * @param registry provider registry
-   */
-  private static void registerMessagingProviders(final ProviderRegistry registry) {
-    // Kafka message broker
-    if (dev.adeengineer.adentic.boot.provider.MessagingProviderFactory.isKafkaAvailable()) {
-      dev.adeengineer.adentic.messaging.kafka.KafkaMessageBroker kafkaBroker =
-          dev.adeengineer.adentic.boot.provider.MessagingProviderFactory.createKafkaBroker();
-      registry.registerProvider("messaging", "kafka", kafkaBroker);
-      log.info("Registered Kafka message broker");
-    } else {
-      log.debug("Kafka broker not available (KAFKA_BOOTSTRAP_SERVERS not set)");
-    }
-
-    // RabbitMQ message broker
-    if (dev.adeengineer.adentic.boot.provider.MessagingProviderFactory.isRabbitMQAvailable()) {
-      dev.adeengineer.adentic.messaging.rabbitmq.RabbitMQMessageBroker rabbitmqBroker =
-          dev.adeengineer.adentic.boot.provider.MessagingProviderFactory.createRabbitMQBroker();
-      registry.registerProvider("messaging", "rabbitmq", rabbitmqBroker);
-      log.info("Registered RabbitMQ message broker");
-    } else {
-      log.debug("RabbitMQ broker not available (RABBITMQ_HOST not set)");
-    }
-  }
-
-  /**
-   * Register observability providers (metrics, health checks).
-   *
-   * @param registry provider registry
-   */
-  private static void registerObservabilityProviders(final ProviderRegistry registry) {
-    // Metrics collector
-    dev.adeengineer.adentic.observability.monitoring.MetricsCollector metricsCollector =
-        dev.adeengineer.adentic.boot.provider.ObservabilityProviderFactory.createMetricsCollector();
-    registry.registerProvider("metrics", "default", metricsCollector);
-    log.info("Registered default metrics collector");
-
-    // Health check service
-    dev.adeengineer.adentic.observability.monitoring.HealthCheckService healthService =
-        dev.adeengineer.adentic.boot.provider.ObservabilityProviderFactory
-            .createHealthCheckService();
-    registry.registerProvider("health", "default", healthService);
-    log.info("Registered health check service");
-
-    // Prometheus metrics provider (if enabled)
-    if (dev.adeengineer.adentic.boot.provider.ObservabilityProviderFactory
-        .isPrometheusAvailable()) {
-      dev.adeengineer.adentic.observability.providers.prometheus.PrometheusMetricsProvider
-          prometheusProvider =
-              dev.adeengineer.adentic.boot.provider.ObservabilityProviderFactory
-                  .createPrometheusProvider();
-      registry.registerProvider("prometheus", "metrics", prometheusProvider);
-      log.info("Registered Prometheus metrics provider");
-    } else {
-      log.debug("Prometheus not enabled (PROMETHEUS_ENABLED not true)");
-    }
-  }
-
-  /**
-   * Register resilience providers (circuit breakers, retry, bulkhead).
-   *
-   * @param registry provider registry
-   */
-  private static void registerResilienceProviders(final ProviderRegistry registry) {
-    // Resilience4j proxy factory
-    dev.adeengineer.resilience4j.Resilience4jProxyFactory resilienceFactory =
-        dev.adeengineer.adentic.boot.provider.ResilienceProviderFactory
-            .createResilienceProxyFactory();
-    registry.registerProvider("resilience", "resilience4j", resilienceFactory);
-    log.info("Registered Resilience4j proxy factory (circuit breaker, retry, bulkhead)");
   }
 
   /** Print startup banner. */
@@ -500,7 +261,7 @@ public final class AgenticApplication {
         ██████╔╝╚██████╔╝╚██████╔╝   ██║
         ╚═════╝  ╚═════╝  ╚═════╝    ╚═╝
 
-        :: AgenticBoot ::        (v1.0.0)
+        :: AgenticBoot ::        (v1.0.0-standalone)
         """;
 
     System.out.println(banner);
