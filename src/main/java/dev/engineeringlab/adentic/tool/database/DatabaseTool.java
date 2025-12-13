@@ -1,11 +1,11 @@
 package dev.engineeringlab.adentic.tool.database;
 
-import dev.engineeringlab.adentic.boot.annotations.provider.ToolProvider;
 import dev.engineeringlab.adentic.tool.database.config.DatabaseConfig;
 import dev.engineeringlab.adentic.tool.database.model.ConnectionInfo;
 import dev.engineeringlab.adentic.tool.database.model.QueryResult;
 import dev.engineeringlab.adentic.tool.database.model.TransactionResult;
 import dev.engineeringlab.adentic.tool.database.provider.*;
+import dev.engineeringlab.tools.annotation.ToolProvider;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;

@@ -1,9 +1,9 @@
 package dev.engineeringlab.adentic.tool.marketdata;
 
-import dev.engineeringlab.adentic.boot.annotations.provider.ToolProvider;
 import dev.engineeringlab.adentic.tool.marketdata.config.MarketDataConfig;
 import dev.engineeringlab.adentic.tool.marketdata.model.*;
 import dev.engineeringlab.adentic.tool.marketdata.provider.*;
+import dev.engineeringlab.tools.annotation.ToolProvider;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;

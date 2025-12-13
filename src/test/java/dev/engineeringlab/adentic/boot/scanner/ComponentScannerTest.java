@@ -4,14 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.engineeringlab.adentic.boot.annotations.Component;
 import dev.engineeringlab.adentic.boot.annotations.Service;
-// Local annotations (not yet in swe-framework)
-import dev.engineeringlab.adentic.boot.annotations.provider.EvaluationProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.InfrastructureProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.MemoryProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.OrchestrationProvider;
 // Provider annotations from swe-framework modules
+import dev.engineeringlab.evaluation.annotation.EvaluationProvider;
+import dev.engineeringlab.infrastructure.annotation.InfrastructureProvider;
 import dev.engineeringlab.llm.text.annotation.TextGenerationProvider;
+import dev.engineeringlab.memory.annotation.MemoryStoreProvider;
 import dev.engineeringlab.messaging.annotation.MessageBrokerProvider;
+import dev.engineeringlab.orchestration.annotation.OrchestrationProvider;
 import dev.engineeringlab.queue.annotation.TaskQueueProvider;
 import dev.engineeringlab.storage.annotation.StorageProvider;
 import dev.engineeringlab.tools.annotation.ToolProvider;
@@ -89,9 +88,9 @@ class ComponentScannerTest {
   }
 
   @Test
-  @DisplayName("Should scan specific annotation type - @MemoryProvider")
+  @DisplayName("Should scan specific annotation type - @MemoryStoreProvider")
   void shouldScanMemoryProviders() {
-    Set<Class<?>> memoryProviders = scanner.scanForAnnotation(MemoryProvider.class);
+    Set<Class<?>> memoryProviders = scanner.scanForAnnotation(MemoryStoreProvider.class);
 
     assertThat(memoryProviders).contains(TestInMemoryProvider.class);
   }
@@ -173,7 +172,7 @@ class ComponentScannerTest {
   @OrchestrationProvider(name = "simple")
   static class TestSimpleOrchestrator {}
 
-  @MemoryProvider(name = "in-memory")
+  @MemoryStoreProvider(name = "in-memory")
   static class TestInMemoryProvider {}
 
   @TaskQueueProvider(name = "redis")

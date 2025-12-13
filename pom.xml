@@ -244,6 +244,30 @@
       <artifactId>workflow-spi</artifactId>
       <version>${engineeringlab.version}</version>
     </dependency>
+    <!-- LLM Evaluation SPI - EvaluationProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>llm-evaluation-spi</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Memory API - MemoryStoreProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>memory-api</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Agent API - OrchestrationProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>agent-api</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Provisioning API - InfrastructureProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>provisioning-api</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
 
     <!-- ==================== -->
     <!-- Testing              -->

@@ -1,9 +1,9 @@
 package dev.engineeringlab.adentic.tool.webtest;
 
-import dev.engineeringlab.adentic.boot.annotations.provider.ToolProvider;
 import dev.engineeringlab.adentic.tool.webtest.config.WebTestConfig;
 import dev.engineeringlab.adentic.tool.webtest.model.*;
 import dev.engineeringlab.adentic.tool.webtest.provider.*;
+import dev.engineeringlab.tools.annotation.ToolProvider;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;

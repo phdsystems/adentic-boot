@@ -1,4 +1,4 @@
-package dev.engineeringlab.adentic.boot.annotations.provider;
+package dev.engineeringlab.adentic.tool.email.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

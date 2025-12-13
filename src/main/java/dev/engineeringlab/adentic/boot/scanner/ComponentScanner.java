@@ -4,19 +4,19 @@ import dev.engineeringlab.adentic.boot.annotations.Component;
 import dev.engineeringlab.adentic.boot.annotations.RestController;
 import dev.engineeringlab.adentic.boot.annotations.Service;
 // Provider annotations from swe-framework modules
-import dev.engineeringlab.adentic.boot.annotations.provider.EvaluationProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.InfrastructureProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.MemoryProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.OrchestrationProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.WebTestProvider;
+import dev.engineeringlab.adentic.tool.webtest.annotation.WebTestProvider;
 import dev.engineeringlab.agent.Agent;
 import dev.engineeringlab.cache.annotation.CacheProvider;
 import dev.engineeringlab.codeexec.annotation.CodeExecutionProvider;
 import dev.engineeringlab.datasource.database.annotation.DatabaseProvider;
 import dev.engineeringlab.email.annotation.EmailProvider;
+import dev.engineeringlab.evaluation.annotation.EvaluationProvider;
+import dev.engineeringlab.infrastructure.annotation.InfrastructureProvider;
 import dev.engineeringlab.llm.text.annotation.TextGenerationProvider;
+import dev.engineeringlab.memory.annotation.MemoryStoreProvider;
 import dev.engineeringlab.messaging.annotation.MessageBrokerProvider;
 import dev.engineeringlab.notification.annotation.NotificationProvider;
+import dev.engineeringlab.orchestration.annotation.OrchestrationProvider;
 import dev.engineeringlab.queue.annotation.TaskQueueProvider;
 import dev.engineeringlab.scm.annotation.ScmProvider;
 import dev.engineeringlab.storage.annotation.StorageProvider;
@@ -24,7 +24,7 @@ import dev.engineeringlab.tools.annotation.ToolProvider;
 import dev.engineeringlab.vcs.annotation.VcsProvider;
 import dev.engineeringlab.websearch.annotation.WebSearchProvider;
 import dev.engineeringlab.workflow.orchestration.annotation.WorkflowProvider;
-// Local annotations (not yet in swe-framework)
+// Local annotations
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.net.URL;
@@ -88,7 +88,7 @@ public class ComponentScanner {
           StorageProvider.class,
           MessageBrokerProvider.class,
           OrchestrationProvider.class,
-          MemoryProvider.class,
+          MemoryStoreProvider.class,
           TaskQueueProvider.class,
           ToolProvider.class,
           EvaluationProvider.class,
@@ -214,7 +214,7 @@ public class ComponentScanner {
     providers.put("storage", scanForAnnotation(StorageProvider.class));
     providers.put("messaging", scanForAnnotation(MessageBrokerProvider.class));
     providers.put("orchestration", scanForAnnotation(OrchestrationProvider.class));
-    providers.put("memory", scanForAnnotation(MemoryProvider.class));
+    providers.put("memory", scanForAnnotation(MemoryStoreProvider.class));
     providers.put("queue", scanForAnnotation(TaskQueueProvider.class));
     providers.put("tool", scanForAnnotation(ToolProvider.class));
     providers.put("evaluation", scanForAnnotation(EvaluationProvider.class));
