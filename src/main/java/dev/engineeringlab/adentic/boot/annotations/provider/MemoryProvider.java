@@ -1,13 +1,13 @@
-package dev.engineeringlab.annotation.provider;
+package dev.engineeringlab.adentic.boot.annotations.provider;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Marks a class as a text generation (LLM) provider. */
+/** Marks a class as a memory/vector store provider. */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface TextGenerationProvider {
+public @interface MemoryProvider {
   String name() default "";
 }

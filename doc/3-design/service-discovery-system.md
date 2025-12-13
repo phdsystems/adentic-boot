@@ -12,7 +12,7 @@ The service discovery system in adentic-se provides a framework for discovering 
 - Priority-based provider selection when multiple implementations exist
 - Compile-time field injection via annotation processing
 - Domain-specific provider annotations through meta-annotation pattern
-- Zero-configuration provider lookup through the `Providers` facade
+- Zero-configuration provider lookup through the `Services` facade
 
 ## Architecture
 
@@ -23,15 +23,15 @@ The service discovery system in adentic-se provides a framework for discovering 
 │  │   Service    │  │   Service    │  │   Service    │             │
 │  │   Class A    │  │   Class B    │  │   Class C    │             │
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘             │
-│         │ @Provider        │ Providers        │ Providers          │
+│         │ @Provider        │ Services         │ Services           │
 │         │ field            │ .get()           │ .getAll()          │
 └─────────┼──────────────────┼──────────────────┼─────────────────────┘
           │                  │                  │
           ▼                  ▼                  ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                      Provider Facade Layer                          │
+│                      Service Facade Layer                           │
 │  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                    Providers (Facade)                        │   │
+│  │                    Services (Facade)                         │   │
 │  │  • get(Class<T>)         - Get highest priority provider    │   │
 │  │  • get(Class<T>, String) - Get provider by name             │   │
 │  │  • getAll(Class<T>)      - Get all providers by priority    │   │
@@ -41,9 +41,9 @@ The service discovery system in adentic-se provides a framework for discovering 
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    Provider Registry Layer                          │
+│                    Service Discovery Layer                          │
 │  ┌─────────────────────────────────────────────────────────────┐   │
-│  │                  ProviderWeaver (Registry)                   │   │
+│  │                  ServiceDiscovery (Registry)                 │   │
 │  │  ┌───────────────────────────────────────────────────────┐  │   │
 │  │  │  Provider Cache (ConcurrentHashMap)                   │  │   │
 │  │  │  • providerInstances: Map<Class<?>, List<?>>         │  │   │
@@ -113,8 +113,8 @@ The core module provides the foundational annotations and runtime infrastructure
 
 **Key Components**:
 - `@Provider` - Meta-annotation for marking provider implementations and fields
-- `Providers` - Facade for provider lookup and field injection
-- `ProviderWeaver` - Registry managing ServiceLoader integration and caching
+- `Services` - Facade for service lookup and field injection
+- `ServiceDiscovery` - Registry managing ServiceLoader integration and caching
 - `ProviderException` - Exception thrown when providers cannot be found or injected
 
 **Dependencies**:
@@ -156,11 +156,11 @@ Used as a meta-annotation to create domain-specific provider annotations that in
 
 **Target**: `ElementType.ANNOTATION_TYPE`
 
-### 3. Providers Facade
+### 3. Services Facade
 
-**Location**: `dev.engineeringlab.common.provider.Providers`
+**Location**: `dev.engineeringlab.common.provider.Services`
 
-The `Providers` class provides a simplified API for provider discovery and injection. It delegates to `ProviderWeaver` for the actual implementation but provides a cleaner interface for consumers.
+The `Services` class provides a simplified API for service discovery and injection. It delegates to `ServiceDiscovery` for the actual implementation but provides a cleaner interface for consumers.
 
 **Key Methods**:
 
@@ -190,8 +190,8 @@ The recommended approach is direct field initialization:
 
 ```java
 public class MyService {
-    // Provider initialized directly - works out of the box
-    private final CacheProvider cache = Providers.get(CacheProvider.class);
+    // Service initialized directly - works out of the box
+    private final CacheProvider cache = Services.get(CacheProvider.class);
 
     public void doWork() {
         cache.put("key", "value");
@@ -199,11 +199,11 @@ public class MyService {
 }
 ```
 
-### 4. ProviderWeaver (ServiceLoader Integration)
+### 4. ServiceDiscovery (ServiceLoader Integration)
 
-**Location**: `dev.engineeringlab.common.provider.ProviderWeaver`
+**Location**: `dev.engineeringlab.common.provider.ServiceDiscovery`
 
-The `ProviderWeaver` class manages the integration with Java's ServiceLoader mechanism and provides caching for discovered providers.
+The `ServiceDiscovery` class manages the integration with Java's ServiceLoader mechanism and provides caching for discovered services.
 
 **Internal Caches**:
 - `serviceLoaderInitialized` (Set<Class<?>>): Tracks which types have been loaded
@@ -324,7 +324,7 @@ public class MyService {
 
 **Implementation**:
 
-The `Providers.inject()` method scans all fields (including inherited fields) for `@Provider` annotations and injects the highest priority provider:
+The `Services.inject()` method scans all fields (including inherited fields) for `@Provider` annotations and injects the highest priority service:
 
 ```java
 public static <T> void inject(T target, Class<T> type) {
@@ -334,9 +334,9 @@ public static <T> void inject(T target, Class<T> type) {
     while (clazz != null && clazz != Object.class) {
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Provider.class)) {
-                Object provider = ProviderWeaver.get(field.getType());
+                Object service = ServiceDiscovery.get(field.getType());
                 field.setAccessible(true);
-                field.set(target, provider);
+                field.set(target, service);
             }
         }
         clazz = clazz.getSuperclass();
@@ -375,12 +375,12 @@ While service files can be created manually, they are typically auto-generated b
 At runtime, when a provider is first requested:
 
 ```java
-CacheProvider cache = Providers.get(CacheProvider.class);
+CacheProvider cache = Services.get(CacheProvider.class);
 ```
 
 The following occurs:
 
-1. `ProviderWeaver.getAll(CacheProvider.class)` is called
+1. `ServiceDiscovery.getAll(CacheProvider.class)` is called
 2. `ServiceLoader.load(CacheProvider.class)` reads `META-INF/services/...CacheProvider`
 3. Each listed implementation class is instantiated via reflection
 4. Classes that fail to instantiate are logged and skipped
@@ -405,7 +405,7 @@ The priority system enables deterministic provider selection when multiple imple
 
 ### Priority Resolution
 
-When `Providers.get(Class<T>)` is called:
+When `Services.get(Class<T>)` is called:
 
 1. All providers are loaded via ServiceLoader
 2. Providers are sorted by priority in **descending order** (highest first)
@@ -425,7 +425,7 @@ public class OpenAITextGenerationProvider implements TextGenerationProvider { }
 public class OllamaTextGenerationProvider implements TextGenerationProvider { }
 
 // Returns AnthropicTextGenerationProvider (highest priority)
-TextGenerationProvider provider = Providers.get(TextGenerationProvider.class);
+TextGenerationProvider provider = Services.get(TextGenerationProvider.class);
 ```
 
 ### Selecting Specific Provider by Name
@@ -435,7 +435,7 @@ To bypass priority and select a specific provider:
 ```java
 // Get by name
 Optional<TextGenerationProvider> ollama =
-    Providers.get(TextGenerationProvider.class, "ollama");
+    Services.get(TextGenerationProvider.class, "ollama");
 
 if (ollama.isPresent()) {
     TextGenerationResponse response = ollama.get().generate(request);
@@ -448,7 +448,7 @@ To retrieve all providers sorted by priority:
 
 ```java
 List<TextGenerationProvider> allProviders =
-    Providers.getAll(TextGenerationProvider.class);
+    Services.getAll(TextGenerationProvider.class);
 
 // allProviders[0] = highest priority
 // allProviders[n] = lowest priority
@@ -518,8 +518,8 @@ dev.engineeringlab.vcs.git.GitVcsProvider
 
 ```java
 public class CodebaseManager {
-    private final VcsProvider vcs = Providers.get(VcsProvider.class);
-    private final CacheProvider cache = Providers.get(CacheProvider.class);
+    private final VcsProvider vcs = Services.get(VcsProvider.class);
+    private final CacheProvider cache = Services.get(CacheProvider.class);
 
     public void cloneRepository(String url, Path destination) {
         vcs.clone(url, destination);
@@ -550,7 +550,7 @@ public class CodebaseManager {
 **Get Highest Priority Provider**:
 
 ```java
-TextGenerationProvider llm = Providers.get(TextGenerationProvider.class);
+TextGenerationProvider llm = Services.get(TextGenerationProvider.class);
 TextGenerationResponse response = llm.generate(request);
 ```
 
@@ -558,7 +558,7 @@ TextGenerationResponse response = llm.generate(request);
 
 ```java
 Optional<TextGenerationProvider> anthropic =
-    Providers.get(TextGenerationProvider.class, "anthropic");
+    Services.get(TextGenerationProvider.class, "anthropic");
 
 anthropic.ifPresent(provider -> {
     TextGenerationResponse response = provider.generate(request);
@@ -569,7 +569,7 @@ anthropic.ifPresent(provider -> {
 
 ```java
 List<TextGenerationProvider> allLLMs =
-    Providers.getAll(TextGenerationProvider.class);
+    Services.getAll(TextGenerationProvider.class);
 
 for (TextGenerationProvider provider : allLLMs) {
     System.out.println("Found: " + provider.getProviderName()
@@ -580,8 +580,8 @@ for (TextGenerationProvider provider : allLLMs) {
 **Check Provider Existence**:
 
 ```java
-if (Providers.exists(CacheProvider.class)) {
-    CacheProvider cache = Providers.get(CacheProvider.class);
+if (Services.exists(CacheProvider.class)) {
+    CacheProvider cache = Services.get(CacheProvider.class);
     cache.put("key", "value");
 } else {
     System.out.println("No cache provider available");
@@ -654,11 +654,11 @@ dev.engineeringlab.llm.provider.ollama.OllamaTextGenerationProvider
 
 ```java
 // Get highest priority (Anthropic, priority=15)
-TextGenerationProvider llm = Providers.get(TextGenerationProvider.class);
+TextGenerationProvider llm = Services.get(TextGenerationProvider.class);
 
 // Or get specific provider
 Optional<TextGenerationProvider> ollama =
-    Providers.get(TextGenerationProvider.class, "ollama");
+    Services.get(TextGenerationProvider.class, "ollama");
 ```
 
 ## Design Rationale
@@ -720,10 +720,10 @@ The service discovery system deliberately avoids Spring Framework dependency for
 
 ### 2. Provider Discovery
 
-- **Prefer `Providers.get()`** over direct ServiceLoader usage
-- **Cache provider references** in fields to avoid repeated lookups
-- **Handle `ProviderException`** when provider might not be available
-- **Use `Providers.exists()`** to check availability before assuming presence
+- **Prefer `Services.get()`** over direct ServiceLoader usage
+- **Cache service references** in fields to avoid repeated lookups
+- **Handle `ProviderException`** when service might not be available
+- **Use `Services.exists()`** to check availability before assuming presence
 
 ### 3. Priority Assignment
 
@@ -735,10 +735,10 @@ The service discovery system deliberately avoids Spring Framework dependency for
 
 ### 4. Testing
 
-- **Use `Providers.reset()`** between tests to clear cache
-- **Create test-specific providers** with high priority for overriding
-- **Register test providers** in `META-INF/services/` in test resources
-- **Verify provider selection** with `Providers.getAll()` in tests
+- **Use `Services.reset()`** between tests to clear cache
+- **Create test-specific services** with high priority for overriding
+- **Register test services** in `META-INF/services/` in test resources
+- **Verify service selection** with `Services.getAll()` in tests
 
 ### 5. Error Handling
 
@@ -766,8 +766,8 @@ The service discovery system deliberately avoids Spring Framework dependency for
 
 **Solutions**:
 1. Verify `@Provider` annotation has correct `priority` value
-2. Check if higher priority provider fails health check
-3. Use `Providers.getAll()` to inspect all providers and their order
+2. Check if higher priority service fails health check
+3. Use `Services.getAll()` to inspect all services and their order
 4. Look for provider instantiation errors in logs (failed providers are skipped)
 
 ### Field Not Injected
@@ -785,9 +785,9 @@ The service discovery system deliberately avoids Spring Framework dependency for
 **Symptom**: Slow startup or repeated provider instantiation
 
 **Solutions**:
-1. Cache provider references in fields: `private final Provider p = Providers.get(...)`
-2. Avoid calling `Providers.get()` in hot paths or loops
-3. Use `Providers.reset()` sparingly (only in tests)
+1. Cache service references in fields: `private final Provider p = Services.get(...)`
+2. Avoid calling `Services.get()` in hot paths or loops
+3. Use `Services.reset()` sparingly (only in tests)
 4. Profile with `-XX:+TraceClassLoading` to identify repeated loading
 
 ## Future Enhancements

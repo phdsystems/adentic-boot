@@ -3,26 +3,28 @@ package dev.engineeringlab.adentic.boot.scanner;
 import dev.engineeringlab.adentic.boot.annotations.Component;
 import dev.engineeringlab.adentic.boot.annotations.RestController;
 import dev.engineeringlab.adentic.boot.annotations.Service;
-import dev.engineeringlab.adentic.boot.annotations.provider.CacheProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.CodeExecutionProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.EmailProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.NotificationProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.SCMProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.VCSProvider;
-import dev.engineeringlab.adentic.boot.annotations.provider.WorkflowProvider;
+// Provider annotations from swe-framework modules
+import dev.engineeringlab.adentic.boot.annotations.provider.EvaluationProvider;
+import dev.engineeringlab.adentic.boot.annotations.provider.InfrastructureProvider;
+import dev.engineeringlab.adentic.boot.annotations.provider.MemoryProvider;
+import dev.engineeringlab.adentic.boot.annotations.provider.OrchestrationProvider;
+import dev.engineeringlab.adentic.boot.annotations.provider.WebTestProvider;
 import dev.engineeringlab.agent.Agent;
-import dev.engineeringlab.annotation.provider.DatabaseProvider;
-import dev.engineeringlab.annotation.provider.EvaluationProvider;
-import dev.engineeringlab.annotation.provider.InfrastructureProvider;
-import dev.engineeringlab.annotation.provider.MemoryProvider;
-import dev.engineeringlab.annotation.provider.MessageBrokerProvider;
-import dev.engineeringlab.annotation.provider.OrchestrationProvider;
-import dev.engineeringlab.annotation.provider.StorageProvider;
-import dev.engineeringlab.annotation.provider.TaskQueueProvider;
-import dev.engineeringlab.annotation.provider.TextGenerationProvider;
-import dev.engineeringlab.annotation.provider.ToolProvider;
-import dev.engineeringlab.annotation.provider.WebSearchProvider;
-import dev.engineeringlab.annotation.provider.WebTestProvider;
+import dev.engineeringlab.cache.annotation.CacheProvider;
+import dev.engineeringlab.codeexec.annotation.CodeExecutionProvider;
+import dev.engineeringlab.datasource.database.annotation.DatabaseProvider;
+import dev.engineeringlab.email.annotation.EmailProvider;
+import dev.engineeringlab.llm.text.annotation.TextGenerationProvider;
+import dev.engineeringlab.messaging.annotation.MessageBrokerProvider;
+import dev.engineeringlab.notification.annotation.NotificationProvider;
+import dev.engineeringlab.queue.annotation.TaskQueueProvider;
+import dev.engineeringlab.scm.annotation.ScmProvider;
+import dev.engineeringlab.storage.annotation.StorageProvider;
+import dev.engineeringlab.tools.annotation.ToolProvider;
+import dev.engineeringlab.vcs.annotation.VcsProvider;
+import dev.engineeringlab.websearch.annotation.WebSearchProvider;
+import dev.engineeringlab.workflow.orchestration.annotation.WorkflowProvider;
+// Local annotations (not yet in swe-framework)
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.net.URL;
@@ -93,13 +95,13 @@ public class ComponentScanner {
           WebSearchProvider.class,
           WebTestProvider.class,
           DatabaseProvider.class,
-          // NEW provider annotations for engineeringlab modules
+          // Provider annotations from swe-framework modules
           CacheProvider.class,
           EmailProvider.class,
           NotificationProvider.class,
           CodeExecutionProvider.class,
-          SCMProvider.class,
-          VCSProvider.class,
+          ScmProvider.class,
+          VcsProvider.class,
           WorkflowProvider.class);
 
   private final String basePackage;
@@ -188,7 +190,7 @@ public class ComponentScanner {
    * <p>Categories:
    *
    * <ul>
-   *   <li>"text-generation" - Text generation providers (OpenAI, Anthropic, Ollama, etc.)
+   *   <li>"llm" - LLM providers (OpenAI, Anthropic, Ollama, etc.)
    *   <li>"infrastructure" - Infrastructure providers (Docker, Local, etc.)
    *   <li>"storage" - Storage providers
    *   <li>"messaging" - Message broker providers (Kafka, RabbitMQ, etc.)
@@ -207,7 +209,7 @@ public class ComponentScanner {
   public Map<String, Set<Class<?>>> scanProviders() {
     Map<String, Set<Class<?>>> providers = new LinkedHashMap<>();
 
-    providers.put("text-generation", scanForAnnotation(TextGenerationProvider.class));
+    providers.put("llm", scanForAnnotation(TextGenerationProvider.class));
     providers.put("infrastructure", scanForAnnotation(InfrastructureProvider.class));
     providers.put("storage", scanForAnnotation(StorageProvider.class));
     providers.put("messaging", scanForAnnotation(MessageBrokerProvider.class));

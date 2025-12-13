@@ -455,7 +455,7 @@ class AllConfigClassesTest {
       DatabaseConfig config = DatabaseConfig.defaults();
 
       assertEquals(DatabaseProvider.H2, config.getProvider());
-      assertEquals("mem:testdb", config.getDatabase());
+      assertTrue(config.getDatabase().startsWith("mem:testdb_"));
       assertEquals("sa", config.getUsername());
       assertEquals("", config.getPassword());
       assertTrue(config.isAutoCommit());
@@ -557,7 +557,7 @@ class AllConfigClassesTest {
       DatabaseConfig config = DatabaseConfig.h2Memory();
 
       assertEquals(DatabaseProvider.H2, config.getProvider());
-      assertEquals("mem:testdb", config.getDatabase());
+      assertTrue(config.getDatabase().startsWith("mem:testdb_"));
       assertEquals("sa", config.getUsername());
       assertEquals("", config.getPassword());
       assertTrue(config.isAutoCommit());
@@ -607,7 +607,7 @@ class AllConfigClassesTest {
       DatabaseConfig config = DatabaseConfig.testing();
 
       assertEquals(DatabaseProvider.H2, config.getProvider());
-      assertEquals("mem:testdb", config.getDatabase());
+      assertTrue(config.getDatabase().startsWith("mem:testdb_"));
     }
 
     @Test

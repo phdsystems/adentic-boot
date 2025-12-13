@@ -5,9 +5,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Marks a class as an infrastructure provider. */
+/** Marks a class as an evaluation provider. */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Infrastructure {
+public @interface EvaluationProvider {
   String name() default "";
 }

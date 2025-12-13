@@ -4,7 +4,7 @@ import dev.engineeringlab.adentic.boot.annotations.AgenticBootApplication;
 import dev.engineeringlab.adentic.boot.annotations.RestController;
 import dev.engineeringlab.adentic.boot.context.AgenticContext;
 import dev.engineeringlab.adentic.boot.event.EventBus;
-import dev.engineeringlab.adentic.boot.registry.ProviderRegistry;
+import dev.engineeringlab.adentic.boot.registry.ServiceRegistry;
 import dev.engineeringlab.adentic.boot.scanner.ComponentScanner;
 import dev.engineeringlab.adentic.boot.web.AgenticServer;
 import dev.engineeringlab.agent.Agent;
@@ -46,11 +46,11 @@ public final class AgenticApplication {
    *
    * <ol>
    *   <li>Creates an {@link AgenticContext}
-   *   <li>Registers core beans (EventBus, ProviderRegistry, ToolRegistry, AgenticServer)
+   *   <li>Registers core beans (EventBus, ServiceRegistry, ToolRegistry, AgenticServer)
    *   <li>Scans for @Component classes and all provider annotations
    *   <li>Registers and instantiates all components
-   *   <li>Scans and registers providers in {@link ProviderRegistry}
-   *   <li>Scans and registers EE agents (SimpleAgent, ReActAgent, etc.)
+   *   <li>Scans and registers providers in {@link ServiceRegistry}
+   *   <li>Scans and registers EE agents in {@link ServiceRegistry} under "agent" category
    *   <li>Registers REST controllers with HTTP server
    *   <li>Starts the HTTP server (if enabled)
    *   <li>Returns the application context
@@ -96,28 +96,29 @@ public final class AgenticApplication {
       context.registerBean(component);
     }
 
-    // 7. Scan and register providers
-    ProviderRegistry providerRegistry = context.getBean(ProviderRegistry.class);
-    Map<String, Set<Class<?>>> providers = scanner.scanProviders();
-    int totalProviders = 0;
+    // 7. Scan and register services
+    ServiceRegistry serviceRegistry = context.getBean(ServiceRegistry.class);
+    Map<String, Set<Class<?>>> services = scanner.scanProviders();
+    int totalServices = 0;
 
-    for (Map.Entry<String, Set<Class<?>>> entry : providers.entrySet()) {
+    for (Map.Entry<String, Set<Class<?>>> entry : services.entrySet()) {
       String category = entry.getKey();
-      Set<Class<?>> categoryProviders = entry.getValue();
+      Set<Class<?>> classes = entry.getValue();
 
-      for (Class<?> providerClass : categoryProviders) {
-        Object providerInstance = context.getBean(providerClass);
-        providerRegistry.registerProviderFromClass(providerClass, providerInstance);
-        totalProviders++;
+      for (Class<?> clazz : classes) {
+        Object instance = context.getBean(clazz);
+        String name = extractProviderName(clazz);
+        serviceRegistry.register(category, name, instance);
+        totalServices++;
       }
     }
 
-    if (totalProviders > 0) {
-      log.info("Registered {} providers across {} categories", totalProviders, providers.size());
+    if (totalServices > 0) {
+      log.info("Registered {} services across {} categories", totalServices, services.size());
     }
 
     // 7.5. Scan and register EE agents
-    int totalAgents = registerEEAgents(context, scanner, providerRegistry);
+    int totalAgents = registerEEAgents(context, scanner, serviceRegistry);
 
     // 8. Register REST controllers with HTTP server
     AgenticServer server = context.getBean(AgenticServer.class);
@@ -134,9 +135,9 @@ public final class AgenticApplication {
     long duration = System.currentTimeMillis() - startTime;
     log.info("AgenticBoot application started in {}ms", duration);
     log.info(
-        "Application context: {} beans registered ({} providers, {} agents)",
+        "Application context: {} beans registered ({} services, {} agents)",
         components.size() + 4,
-        totalProviders,
+        totalServices,
         totalAgents);
 
     // Add shutdown hook
@@ -162,10 +163,10 @@ public final class AgenticApplication {
     context.registerSingleton(EventBus.class, eventBus);
     log.debug("Registered core bean: EventBus");
 
-    // ProviderRegistry
-    ProviderRegistry providerRegistry = new ProviderRegistry();
-    context.registerSingleton(ProviderRegistry.class, providerRegistry);
-    log.debug("Registered core bean: ProviderRegistry");
+    // ServiceRegistry
+    ServiceRegistry serviceRegistry = new ServiceRegistry();
+    context.registerSingleton(ServiceRegistry.class, serviceRegistry);
+    log.debug("Registered core bean: ServiceRegistry");
 
     // ToolRegistry (for EE agents)
     ToolRegistry toolRegistry = new SimpleToolRegistry();
@@ -191,18 +192,18 @@ public final class AgenticApplication {
    * <ol>
    *   <li>Scans for classes implementing {@link Agent} interface
    *   <li>Instantiates each agent (if not already in context)
-   *   <li>Registers agents in {@link ProviderRegistry} under "agent" category
+   *   <li>Registers agents in {@link ServiceRegistry} under "agent" category
    * </ol>
    *
    * @param context the application context
    * @param scanner the component scanner
-   * @param providerRegistry the provider registry
+   * @param serviceRegistry the service registry
    * @return number of agents registered
    */
   private static int registerEEAgents(
       final AgenticContext context,
       final ComponentScanner scanner,
-      final ProviderRegistry providerRegistry) {
+      final ServiceRegistry serviceRegistry) {
 
     Set<Class<?>> agentClasses = scanner.scanAgents();
     if (agentClasses.isEmpty()) {
@@ -227,8 +228,8 @@ public final class AgenticApplication {
         Agent agent = (Agent) agentInstance;
         String agentName = agent.getName();
 
-        // Register in ProviderRegistry under "agent" category
-        providerRegistry.registerAgent(agentName, agent);
+        // Register in ServiceRegistry under "agent" category
+        serviceRegistry.register("agent", agentName, agent);
         log.debug("Registered EE agent: {} ({})", agentName, agentClass.getSimpleName());
 
         agentCount++;
@@ -238,10 +239,43 @@ public final class AgenticApplication {
     }
 
     if (agentCount > 0) {
-      log.info("Registered {} EE agents in ProviderRegistry", agentCount);
+      log.info("Registered {} EE agents", agentCount);
     }
 
     return agentCount;
+  }
+
+  /**
+   * Extract provider name from class annotations.
+   *
+   * <p>Looks for a 'name' attribute in provider annotations. Falls back to decapitalized class name
+   * if not found.
+   *
+   * @param clazz the provider class
+   * @return the provider name
+   */
+  private static String extractProviderName(final Class<?> clazz) {
+    // Try to find name from any annotation with a 'name' method
+    for (java.lang.annotation.Annotation annotation : clazz.getAnnotations()) {
+      try {
+        java.lang.reflect.Method nameMethod = annotation.annotationType().getMethod("name");
+        String name = (String) nameMethod.invoke(annotation);
+        if (name != null && !name.isEmpty()) {
+          return name;
+        }
+      } catch (NoSuchMethodException
+          | IllegalAccessException
+          | java.lang.reflect.InvocationTargetException e) {
+        // Annotation doesn't have 'name' method or failed to invoke, continue
+      }
+    }
+
+    // Fallback: decapitalized simple class name
+    String simpleName = clazz.getSimpleName();
+    if (simpleName.isEmpty()) {
+      return simpleName;
+    }
+    return Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1);
   }
 
   /** Print startup banner. */

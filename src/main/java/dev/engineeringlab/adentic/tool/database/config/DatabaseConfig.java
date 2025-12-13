@@ -189,12 +189,14 @@ public class DatabaseConfig {
   /**
    * H2 in-memory configuration preset. Fast in-memory database for testing.
    *
-   * @return H2 in-memory configuration
+   * <p>Each call generates a unique database name to ensure test isolation.
+   *
+   * @return H2 in-memory configuration with unique database name
    */
   public static DatabaseConfig h2Memory() {
     return DatabaseConfig.builder()
         .provider(DatabaseProvider.H2)
-        .database("mem:testdb")
+        .database("mem:testdb_" + System.nanoTime())
         .host(null)
         .port(0)
         .username("sa")

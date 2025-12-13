@@ -8,7 +8,6 @@ import dev.engineeringlab.adentic.boot.web.annotations.GetMapping;
 import dev.engineeringlab.adentic.boot.web.annotations.PostMapping;
 import dev.engineeringlab.adentic.boot.web.annotations.RequestBody;
 import dev.engineeringlab.common.annotation.Provider;
-import dev.engineeringlab.common.provider.Providers;
 import dev.engineeringlab.llm.text.TextGenerationProvider;
 import dev.engineeringlab.llm.text.model.TextGenerationRequest;
 import dev.engineeringlab.llm.text.model.TextGenerationResponse;
@@ -19,30 +18,27 @@ import reactor.core.publisher.Mono;
 /**
  * Example application demonstrating automatic provider injection using the @Provider annotation.
  *
- * <p>This example showcases the field-level auto-injection pattern where providers are
- * automatically injected into annotated fields by calling {@link Providers#inject(Object, Class)}
- * in the constructor.
+ * <p>This example showcases true auto-injection where providers are automatically injected into
+ * {@code @Provider} annotated fields by AgenticBoot's bean lifecycle - no manual code required.
  *
  * <h2>Auto-Injection Pattern</h2>
  *
  * <pre>{@code
- * public class MyClass {
- *   @Provider(name = "openai")
- *   private TextGenerationProvider provider;
+ * @RestController
+ * public class MyController {
+ *   @Provider
+ *   private TextGenerationProvider provider;  // Automatically injected!
  *
- *   public MyClass() {
- *     Providers.inject(this, MyClass.class);
- *     // provider is now automatically initialized
- *   }
+ *   // No constructor needed - AgenticBoot handles injection
  * }
  * }</pre>
  *
- * <p>The {@code @Provider} annotation marks fields for automatic injection. When
- * {@code Providers.inject(this, MyClass.class)} is called, it:
+ * <p>The {@code @Provider} annotation marks fields for automatic injection. When AgenticBoot
+ * creates the bean, it automatically:
  * <ol>
  *   <li>Scans for fields annotated with @Provider</li>
- *   <li>Discovers and initializes the appropriate provider based on the field type and name</li>
- *   <li>Injects the provider instance into the field</li>
+ *   <li>Discovers providers via ServiceLoader</li>
+ *   <li>Injects the highest priority provider into the field</li>
  * </ol>
  *
  * <h2>Setup</h2>
@@ -94,8 +90,7 @@ public class AutoInjectionExample {
    * REST controller demonstrating automatic provider injection.
    *
    * <p>The TextGenerationProvider is automatically injected via the @Provider annotation
-   * when the controller is instantiated. This eliminates the need for manual provider
-   * discovery and initialization.
+   * when AgenticBoot creates this controller. No manual injection code required.
    */
   @Slf4j
   @RestController
@@ -104,24 +99,11 @@ public class AutoInjectionExample {
     /**
      * Auto-injected text generation provider.
      *
-     * <p>This field is automatically populated by the Providers.inject() call in the
-     * constructor. The provider name "openai" specifies which LLM provider to use.
+     * <p>This field is automatically populated by AgenticBoot's bean lifecycle.
+     * The framework calls Providers.inject() after instantiation.
      */
-    @Provider(name = "openai")
+    @Provider
     private TextGenerationProvider provider;
-
-    /**
-     * Constructor that triggers automatic provider injection.
-     *
-     * <p>Calling {@code Providers.inject(this, AutoInjectionController.class)} scans
-     * this class for @Provider-annotated fields and automatically injects the
-     * appropriate provider instances.
-     */
-    public AutoInjectionController() {
-      Providers.inject(this, AutoInjectionController.class);
-      log.info("Auto-injection completed. Provider: {}, Model: {}",
-          provider.getProviderName(), provider.getModel());
-    }
 
     @GetMapping("/api/health")
     public Map<String, String> health() {

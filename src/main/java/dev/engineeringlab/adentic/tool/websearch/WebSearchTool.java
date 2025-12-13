@@ -1,9 +1,9 @@
 package dev.engineeringlab.adentic.tool.websearch;
 
+import dev.engineeringlab.adentic.boot.annotations.provider.ToolProvider;
 import dev.engineeringlab.adentic.tool.websearch.config.WebSearchConfig;
 import dev.engineeringlab.adentic.tool.websearch.model.*;
 import dev.engineeringlab.adentic.tool.websearch.provider.DuckDuckGoSearchProvider;
-import dev.engineeringlab.annotation.provider.ToolProvider;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;

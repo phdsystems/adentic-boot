@@ -1,13 +1,13 @@
-package dev.engineeringlab.annotation.provider;
+package dev.engineeringlab.adentic.boot.annotations.provider;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Marks a class as an orchestration provider. */
+/** Marks a class as a storage provider. */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface OrchestrationProvider {
+public @interface StorageProvider {
   String name() default "";
 }

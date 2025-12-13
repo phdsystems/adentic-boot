@@ -4,15 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.engineeringlab.adentic.boot.annotations.Component;
 import dev.engineeringlab.adentic.boot.annotations.Service;
-import dev.engineeringlab.annotation.provider.EvaluationProvider;
-import dev.engineeringlab.annotation.provider.InfrastructureProvider;
-import dev.engineeringlab.annotation.provider.MemoryProvider;
-import dev.engineeringlab.annotation.provider.MessageBrokerProvider;
-import dev.engineeringlab.annotation.provider.OrchestrationProvider;
-import dev.engineeringlab.annotation.provider.StorageProvider;
-import dev.engineeringlab.annotation.provider.TaskQueueProvider;
-import dev.engineeringlab.annotation.provider.TextGenerationProvider;
-import dev.engineeringlab.annotation.provider.ToolProvider;
+// Local annotations (not yet in swe-framework)
+import dev.engineeringlab.adentic.boot.annotations.provider.EvaluationProvider;
+import dev.engineeringlab.adentic.boot.annotations.provider.InfrastructureProvider;
+import dev.engineeringlab.adentic.boot.annotations.provider.MemoryProvider;
+import dev.engineeringlab.adentic.boot.annotations.provider.OrchestrationProvider;
+// Provider annotations from swe-framework modules
+import dev.engineeringlab.llm.text.annotation.TextGenerationProvider;
+import dev.engineeringlab.messaging.annotation.MessageBrokerProvider;
+import dev.engineeringlab.queue.annotation.TaskQueueProvider;
+import dev.engineeringlab.storage.annotation.StorageProvider;
+import dev.engineeringlab.tools.annotation.ToolProvider;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +50,7 @@ class ComponentScannerTest {
 
   @Test
   @DisplayName("Should scan specific annotation type - @TextGenerationProvider")
-  void shouldScanTextGenerationProviders() {
+  void shouldScanLLMProviders() {
     Set<Class<?>> providers = scanner.scanForAnnotation(TextGenerationProvider.class);
 
     assertThat(providers).contains(TestOpenAIProvider.class);
@@ -125,7 +127,7 @@ class ComponentScannerTest {
 
     assertThat(providers)
         .containsKeys(
-            "text-generation",
+            "llm",
             "infrastructure",
             "storage",
             "messaging",
@@ -138,7 +140,7 @@ class ComponentScannerTest {
             "web-test",
             "database");
 
-    assertThat(providers.get("text-generation")).contains(TestOpenAIProvider.class);
+    assertThat(providers.get("llm")).contains(TestOpenAIProvider.class);
     assertThat(providers.get("infrastructure")).contains(TestDockerProvider.class);
     assertThat(providers.get("storage")).contains(TestLocalStorageProvider.class);
     assertThat(providers.get("messaging")).contains(TestKafkaProvider.class);
@@ -156,7 +158,7 @@ class ComponentScannerTest {
   @Service
   static class TestService {}
 
-  @TextGenerationProvider(name = "openai")
+  @TextGenerationProvider(name = "openai", model = "gpt-4-turbo")
   static class TestOpenAIProvider {}
 
   @InfrastructureProvider(name = "docker")

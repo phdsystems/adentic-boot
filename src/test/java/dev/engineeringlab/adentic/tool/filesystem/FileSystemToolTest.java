@@ -1003,18 +1003,20 @@ class FileSystemToolTest {
     @Test
     @DisplayName("Should find files modified after timestamp")
     void testFindFilesModifiedAfter() throws IOException {
+      // Create files with explicit modification times to avoid timing flakiness
+      java.time.Instant cutoff = java.time.Instant.now();
+      java.time.Instant oldTime = cutoff.minusSeconds(3600); // 1 hour ago
+      java.time.Instant newTime = cutoff.plusSeconds(3600); // 1 hour in future
+
       Path oldFile = testDir.resolve("old.txt");
       Files.writeString(oldFile, "old");
+      Files.setLastModifiedTime(oldFile, java.nio.file.attribute.FileTime.from(oldTime));
+
+      Path newFile = testDir.resolve("new.txt");
+      Files.writeString(newFile, "new");
+      Files.setLastModifiedTime(newFile, java.nio.file.attribute.FileTime.from(newTime));
 
       try {
-        // Wait longer to ensure filesystem timestamp granularity difference
-        Thread.sleep(1000);
-        java.time.Instant cutoff = java.time.Instant.now();
-        Thread.sleep(1000);
-
-        Path newFile = testDir.resolve("new.txt");
-        Files.writeString(newFile, "new");
-
         FileSearchRequest request =
             FileSearchRequest.builder()
                 .directory(testDir)
@@ -1028,11 +1030,8 @@ class FileSystemToolTest {
         assertNotNull(results);
         assertThat(results).anyMatch(info -> info.getName().equals("new.txt"));
         assertThat(results).noneMatch(info -> info.getName().equals("old.txt"));
-
-        Files.deleteIfExists(newFile);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
       } finally {
+        Files.deleteIfExists(newFile);
         Files.deleteIfExists(oldFile);
       }
     }
@@ -1040,17 +1039,20 @@ class FileSystemToolTest {
     @Test
     @DisplayName("Should find files modified before timestamp")
     void testFindFilesModifiedBefore() throws IOException {
+      // Create files with explicit modification times to avoid timing flakiness
+      java.time.Instant cutoff = java.time.Instant.now();
+      java.time.Instant oldTime = cutoff.minusSeconds(3600); // 1 hour ago
+      java.time.Instant newTime = cutoff.plusSeconds(3600); // 1 hour in future
+
       Path oldFile = testDir.resolve("old.txt");
       Files.writeString(oldFile, "old");
+      Files.setLastModifiedTime(oldFile, java.nio.file.attribute.FileTime.from(oldTime));
+
+      Path newFile = testDir.resolve("new.txt");
+      Files.writeString(newFile, "new");
+      Files.setLastModifiedTime(newFile, java.nio.file.attribute.FileTime.from(newTime));
 
       try {
-        Thread.sleep(100);
-        java.time.Instant cutoff = java.time.Instant.now();
-        Thread.sleep(100);
-
-        Path newFile = testDir.resolve("new.txt");
-        Files.writeString(newFile, "new");
-
         FileSearchRequest request =
             FileSearchRequest.builder()
                 .directory(testDir)
@@ -1064,11 +1066,8 @@ class FileSystemToolTest {
         assertNotNull(results);
         assertThat(results).anyMatch(info -> info.getName().equals("old.txt"));
         assertThat(results).noneMatch(info -> info.getName().equals("new.txt"));
-
-        Files.deleteIfExists(newFile);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
       } finally {
+        Files.deleteIfExists(newFile);
         Files.deleteIfExists(oldFile);
       }
     }

@@ -9,7 +9,7 @@ import dev.engineeringlab.adentic.boot.annotations.Inject;
 import dev.engineeringlab.adentic.boot.annotations.RestController;
 import dev.engineeringlab.adentic.boot.context.AgenticContext;
 import dev.engineeringlab.adentic.boot.event.EventBus;
-import dev.engineeringlab.adentic.boot.registry.ProviderRegistry;
+import dev.engineeringlab.adentic.boot.registry.ServiceRegistry;
 import dev.engineeringlab.adentic.boot.web.AgenticServer;
 import dev.engineeringlab.adentic.boot.web.ResponseEntity;
 import dev.engineeringlab.adentic.boot.web.annotations.GetMapping;
@@ -59,7 +59,7 @@ class AgenticApplicationTest {
 
       assertThat(context).isNotNull();
       assertThat(context.containsBean(EventBus.class)).isTrue();
-      assertThat(context.containsBean(ProviderRegistry.class)).isTrue();
+      assertThat(context.containsBean(ServiceRegistry.class)).isTrue();
       assertThat(context.containsBean(AgenticServer.class)).isTrue();
 
     } finally {
@@ -106,7 +106,7 @@ class AgenticApplicationTest {
       context = AgenticApplication.run(MinimalTestApp.class);
 
       assertThat(context.getBean(EventBus.class)).isNotNull();
-      assertThat(context.getBean(ProviderRegistry.class)).isNotNull();
+      assertThat(context.getBean(ServiceRegistry.class)).isNotNull();
       assertThat(context.getBean(AgenticServer.class)).isNotNull();
 
     } finally {

@@ -145,16 +145,12 @@ The `OpenAILLMProvider` is automatically discovered and registered:
 
 ```java
 @Service
-@TextGenerationProvider(
+@LLM(
     name = "openai",
-    model = "gpt-4",
     description = "OpenAI GPT models",
+    models = {"gpt-4", "gpt-4-turbo-preview", "gpt-3.5-turbo"},
     supportsStreaming = true,
-    maxTokens = 128000,
-    contextWindow = 128000,
-    isLocal = false,
-    priority = 10,
-    enabledByDefault = true)
+    priority = 10)
 public class OpenAILLMProvider {
   @Getter private final OpenAIClient client;
 
@@ -253,7 +249,7 @@ INFO  Registered 1 providers across 1 categories
 
 If not found, ensure:
 - `OpenAILLMProvider` is in the scan path
-- `@Service` and `@TextGenerationProvider` annotations are present
+- `@Service` and `@LLM` annotations are present
 
 ### Error: "Rate limit exceeded"
 
@@ -283,12 +279,12 @@ If not found, ensure:
 AgenticBoot Application
   │
   ├─> ComponentScanner
-  │     └─> Discovers @TextGenerationProvider classes
+  │     └─> Discovers @LLM classes
   │
   ├─> ProviderRegistry
   │     └─> Registers OpenAILLMProvider under "text-generation" category
   │
-  ├─> OpenAILLMProvider (@Service + @TextGenerationProvider)
+  ├─> OpenAILLMProvider (@Service + @LLM)
   │     └─> OpenAIClient (adentic-ai-client)
   │           └─> HTTP calls to api.openai.com
   │

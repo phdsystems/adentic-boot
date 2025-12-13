@@ -144,12 +144,6 @@
     <!-- ==================== -->
     <!-- EngineeringLab Modules -->
     <!-- ==================== -->
-    <!-- Annotations Core - Provider discovery (Providers class) -->
-    <dependency>
-      <groupId>dev.engineeringlab</groupId>
-      <artifactId>annotations-core</artifactId>
-      <version>${engineeringlab.version}</version>
-    </dependency>
     <!-- LLM Facade - LLM class for simplified access -->
     <dependency>
       <groupId>dev.engineeringlab</groupId>
@@ -172,6 +166,82 @@
     <dependency>
       <groupId>dev.engineeringlab</groupId>
       <artifactId>llm-core</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+
+    <!-- ==================== -->
+    <!-- Provider Annotations -->
+    <!-- ==================== -->
+    <!-- Cache SPI - CacheProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>cache-spi</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Code Execution SPI - CodeExecutionProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>codeexec-spi</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Database SPI - DatabaseProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>database-spi</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Email SPI - EmailProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>email-spi</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Messaging SPI - MessageBrokerProvider, TaskQueueProvider annotations -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>messaging-spi</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Notification API - NotificationProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>notification-api</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Storage SPI - StorageProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>storage-spi</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Tools API - ToolProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>tools-api</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Web Search SPI - WebSearchProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>websearch-spi</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- SCM SPI - ScmProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>scm-spi</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- VCS SPI - VcsProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>vcs-spi</artifactId>
+      <version>${engineeringlab.version}</version>
+    </dependency>
+    <!-- Workflow SPI - WorkflowProvider annotation -->
+    <dependency>
+      <groupId>dev.engineeringlab</groupId>
+      <artifactId>workflow-spi</artifactId>
       <version>${engineeringlab.version}</version>
     </dependency>
 

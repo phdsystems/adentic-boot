@@ -5,7 +5,7 @@ import dev.engineeringlab.adentic.boot.annotations.AgenticBootApplication;
 import dev.engineeringlab.adentic.boot.annotations.RestController;
 import dev.engineeringlab.adentic.boot.context.AgenticContext;
 import dev.engineeringlab.llm.LLM;
-import dev.engineeringlab.adentic.boot.registry.ProviderRegistry;
+import dev.engineeringlab.common.provider.Registry;
 import dev.engineeringlab.adentic.boot.web.annotations.GetMapping;
 import dev.engineeringlab.adentic.boot.web.annotations.PostMapping;
 import dev.engineeringlab.adentic.boot.web.annotations.RequestBody;
@@ -74,39 +74,39 @@ public class OpenAIExample {
   @RestController
   public static class LLMController {
 
-    private ProviderRegistry registry;
+    private Registry registry;
 
-    private ProviderRegistry getRegistry() {
+    private Registry getRegistry() {
       if (registry == null && OpenAIExample.getContext() != null) {
-        registry = OpenAIExample.getContext().getBean(ProviderRegistry.class);
+        registry = OpenAIExample.getContext().getBean(Registry.class);
       }
       return registry;
     }
 
-    private TextGenerationProvider getProvider(String providerName) {
-      if (providerName == null || providerName.isBlank()) {
-        providerName = "openai";
+    private TextGenerationProvider getLLM(String name) {
+      if (name == null || name.isBlank()) {
+        name = "openai";
       }
 
       // Check if already registered
       if (getRegistry() != null) {
-        Object cached = getRegistry().getProvider("llm", providerName);
-        if (cached instanceof TextGenerationProvider provider) {
-          return provider;
+        Object cached = getRegistry().get("llm", name);
+        if (cached instanceof TextGenerationProvider llm) {
+          return llm;
         }
       }
 
       // Get from facade
-      TextGenerationProvider provider = LLM.using(providerName).provider();
-      log.info("Initialized LLM provider: {} with model {}",
-          provider.getProviderName(), provider.getModel());
+      TextGenerationProvider llm = LLM.using(name).provider();
+      log.info("Initialized LLM: {} with model {}",
+          llm.getProviderName(), llm.getModel());
 
       // Register for caching
       if (getRegistry() != null) {
-        getRegistry().registerProvider("llm", providerName, provider);
+        getRegistry().register("llm", name, llm);
       }
 
-      return provider;
+      return llm;
     }
 
     @GetMapping("/api/health")
@@ -129,7 +129,7 @@ public class OpenAIExample {
     @GetMapping("/api/llm/status")
     public Map<String, Object> getStatus() {
       try {
-        TextGenerationProvider provider = getProvider("openai");
+        TextGenerationProvider provider = getLLM("openai");
         return Map.of(
             "status", "UP",
             "provider", provider.getProviderName(),
@@ -146,7 +146,7 @@ public class OpenAIExample {
       String providerName = (String) body.getOrDefault("provider", "openai");
       log.info("Chat request [{}]: {}", providerName, message);
 
-      return Mono.fromCallable(() -> getProvider(providerName))
+      return Mono.fromCallable(() -> getLLM(providerName))
           .flatMap(provider -> {
             TextGenerationRequest request = TextGenerationRequest.simple(message);
             return provider.generate(request);
@@ -170,7 +170,7 @@ public class OpenAIExample {
       String providerName = (String) params.getOrDefault("provider", "openai");
       log.info("Generate request [{}]: {}", providerName, prompt);
 
-      return Mono.fromCallable(() -> getProvider(providerName))
+      return Mono.fromCallable(() -> getLLM(providerName))
           .flatMap(provider -> {
             TextGenerationRequest request = TextGenerationRequest.builder()
                 .prompt(prompt)

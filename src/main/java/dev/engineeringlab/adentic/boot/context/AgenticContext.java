@@ -179,20 +179,23 @@ public class AgenticContext implements AutoCloseable {
       // Find @Inject constructor or no-arg constructor
       Constructor<?> constructor = findInjectableConstructor(beanClass);
 
+      T instance;
       if (constructor.getParameterCount() == 0) {
         // No dependencies
-        return (T) constructor.newInstance();
+        instance = (T) constructor.newInstance();
+      } else {
+        // Resolve dependencies
+        Class<?>[] paramTypes = constructor.getParameterTypes();
+        Object[] args = new Object[paramTypes.length];
+
+        for (int i = 0; i < paramTypes.length; i++) {
+          args[i] = getBean(paramTypes[i]);
+        }
+
+        instance = (T) constructor.newInstance(args);
       }
 
-      // Resolve dependencies
-      Class<?>[] paramTypes = constructor.getParameterTypes();
-      Object[] args = new Object[paramTypes.length];
-
-      for (int i = 0; i < paramTypes.length; i++) {
-        args[i] = getBean(paramTypes[i]);
-      }
-
-      return (T) constructor.newInstance(args);
+      return instance;
 
     } catch (Exception e) {
       throw new IllegalStateException("Failed to instantiate bean: " + beanClass.getName(), e);
