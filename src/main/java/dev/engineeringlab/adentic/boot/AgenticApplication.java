@@ -4,6 +4,7 @@ import dev.engineeringlab.adentic.boot.annotations.AgenticBootApplication;
 import dev.engineeringlab.adentic.boot.annotations.RestController;
 import dev.engineeringlab.adentic.boot.context.AgenticContext;
 import dev.engineeringlab.adentic.boot.event.EventBus;
+import dev.engineeringlab.adentic.boot.llm.LLMService;
 import dev.engineeringlab.adentic.boot.registry.ServiceRegistry;
 import dev.engineeringlab.adentic.boot.scanner.ComponentScanner;
 import dev.engineeringlab.adentic.boot.web.AgenticServer;
@@ -178,10 +179,16 @@ public final class AgenticApplication {
     context.registerSingleton(AgenticServer.class, server);
     log.debug("Registered core bean: AgenticServer");
 
-    // Note: LLM clients, infrastructure providers, messaging providers,
-    // observability providers, and resilience providers are disabled in standalone mode.
-    // They will be re-enabled when the external dependencies are available.
-    log.info("Running in standalone mode - external providers disabled");
+    // LLMService (wraps LLM facade for DI access)
+    LLMService llmService = new LLMService();
+    context.registerSingleton(LLMService.class, llmService);
+    log.debug("Registered core bean: LLMService");
+
+    if (llmService.isAvailable()) {
+      log.info("LLM provider available: {} ({})", llmService.providerName(), llmService.model());
+    } else {
+      log.info("Running in standalone mode - no LLM provider configured");
+    }
   }
 
   /**
